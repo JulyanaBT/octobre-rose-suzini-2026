@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const url = Deno.env.get('SUPABASE_URL')!;
 const service = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {auth:{persistSession:false,autoRefreshToken:false}});
 const authClient = () => createClient(url,Deno.env.get('SUPABASE_ANON_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+const digest = async (token:string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token))),b=>b.toString(16).padStart(2,'0')).join('');
 const site = 'https://julyanabt.fr/octobre-rose-suzini-2026/';
 const origins = new Set(['https://julyanabt.fr','http://127.0.0.1:8765']);
 Deno.serve(async req => {
@@ -23,6 +24,17 @@ Deno.serve(async req => {
  if(body.action==='activate'){
   const password=String(body.password||'');
   if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  if(body.type==='club'){
+   const token=String(body.token_hash||'');
+   const email=String(body.email||'').trim().toLowerCase();
+   if(!/^[a-f0-9]{64}$/.test(token)||!/^\S+@\S+\.\S+$/.test(email)||email.length>150)return reply({error:'Vérifiez le lien et votre e-mail.'},400);
+   const hash=await digest(token);
+   const {data:invitation,error:lookupError}=await service.from('club_accounts').select('id,username,enabled,invite_expires_at').eq('invitation_hash',hash).is('user_id',null).maybeSingle();
+   if(lookupError||!invitation?.enabled||!invitation.invite_expires_at||Date.parse(invitation.invite_expires_at)<=Date.now())return reply({error:'Ce lien est expiré, annulé ou déjà utilisé.'},400);
+   const {error}=await service.auth.admin.createUser({email,password,email_confirm:true,app_metadata:{club_invitation_id:invitation.id,club_invitation_hash:hash}});
+   if(error)return reply({error:'Création impossible : cet e-mail peut être déjà utilisé, le mot de passe refusé ou le lien expiré. Aucun compte existant n’a été modifié.'},400);
+   return reply({username:invitation.username});
+  }
   if(!['invite','recovery'].includes(body.type)||typeof body.token_hash!=='string')return reply({error:'Invitation invalide.'},400);
   const username=String(body.username||'').trim().toLowerCase();
   const email=String(body.email||'').trim().toLowerCase();
@@ -46,12 +58,12 @@ Deno.serve(async req => {
  const {data:owner}=await service.from('organizers').select('user_id').eq('user_id',userData.user.id).maybeSingle();
  if(!owner)return reply({error:'Accès réservé à l’administrateur.'},403);
  if(body.action==='list'){
-  const {data,error}=await service.from('club_accounts').select('user_id,username,display_name,email,enabled,event_ids,activated_at,invite_expires_at,invitation_sent_at').order('created_at');
+  const {data,error}=await service.from('club_accounts').select('id,user_id,username,display_name,email,enabled,event_ids,activated_at,invite_expires_at,invitation_sent_at').order('created_at');
   if(error)throw new Error('Gestion des accès indisponible.');
-  return reply({accounts:data});
+  return reply({accounts:data.map(a=>({...a,user_id:a.id}))});
  }
  if(body.action==='mark_sent'){
-  const {error}=await service.from('club_accounts').update({invitation_sent_at:new Date().toISOString()}).eq('user_id',body.user_id).is('activated_at',null);
+  const {error}=await service.from('club_accounts').update({invitation_sent_at:new Date().toISOString()}).eq('id',body.user_id).is('activated_at',null);
   if(error)throw new Error('Mise à jour impossible.');return reply({ok:true});
  }
  if(body.action==='update'){
@@ -65,23 +77,23 @@ Deno.serve(async req => {
 
   if(body.action==='create'){
    const username=String(body.username||'').trim().toLowerCase();
-   const display_name=String(body.display_name||'').trim();
-   const email=String(body.email||'').trim().toLowerCase();
-   if(!/^[a-z][a-z0-9_-]{1,29}$/.test(username)||!display_name||display_name.length>80||!/^\S+@\S+\.\S+$/.test(email)||!Array.isArray(body.event_ids)||!body.event_ids.length)return reply({error:'Vérifiez le prénom, l’identifiant, l’e-mail et les événements.'},400);
+   if(!/^[a-z][a-z0-9_-]{1,29}$/.test(username)||!Array.isArray(body.event_ids)||!body.event_ids.length)return reply({error:'Vérifiez l’identifiant et les événements.'},400);
    const {data:events,error:eventsError}=await service.from('events').select('id').in('id',body.event_ids);
    if(eventsError||events?.length!==new Set(body.event_ids).size)return reply({error:'Événement inconnu.'},400);
-   const {data:existing}=await service.from('club_accounts').select('user_id').eq('username',username);
-   if(existing?.length)return reply({error:'Cet identifiant est déjà utilisé.'},409);
-   const {data:created,error}=await service.auth.admin.createUser({email,email_confirm:false,user_metadata:{display_name}});
-   if(error||!created.user)return reply({error:'Cet e-mail est déjà utilisé ou ne peut pas être invité.'},409);
-   account={user_id:created.user.id,username,display_name,email,event_ids:body.event_ids,enabled:true,invite_expires_at:new Date(Date.now()+3600000).toISOString()};
-   const {error:saveError}=await service.from('club_accounts').insert(account);
-   if(saveError){await service.auth.admin.deleteUser(created.user.id);return reply({error:'Cet identifiant ou cet e-mail est déjà utilisé.'},409);}
-
+   const {data:created,error}=await service.from('club_accounts').insert({username,display_name:username,event_ids:body.event_ids}).select('*').single();
+   if(error)return reply({error:'Cet identifiant est déjà utilisé ou l’invitation ne peut pas être créée.'},409);
+   account=created;
   }else{
-   const {data}=await service.from('club_accounts').select('*').eq('user_id',body.user_id).maybeSingle();
+   const {data}=await service.from('club_accounts').select('*').eq('id',body.user_id).maybeSingle();
    if(!data||data.activated_at||!data.enabled)return reply({error:'Cette invitation ne peut pas être renouvelée.'},400);
    account=data;
+  }
+  if(!account.user_id){
+   const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+   const expires=new Date(Date.now()+3600000).toISOString();
+   const {data:updated,error}=await service.from('club_accounts').update({invitation_hash:await digest(token),invite_expires_at:expires,invitation_sent_at:null}).eq('id',account.id).is('user_id',null).eq('enabled',true).select('id').maybeSingle();
+   if(error||!updated)throw new Error('Invitation indisponible.');
+   return reply({user_id:account.id,username:account.username,expires_at:expires,link:`${site}#activation?username=${encodeURIComponent(account.username)}&type=club&token_hash=${token}`});
   }
   // Recovery token activates only this pending, non-admin Club account.
   const {data:generated,error}=await service.auth.admin.generateLink({type:'recovery',email:account.email});
