@@ -101,3 +101,8 @@ body:is([data-page="infos"],[data-page="contacts"]) header{width:100%}
 .contacts-cards{grid-template-columns:1fr;max-width:700px;margin:auto}.organizer-row{display:grid;grid-template-columns:65px 1fr 85px;align-items:center;gap:6px}.organizer-row>strong{font-size:12px}.whatsapp-group{background:#fff0f6}.whatsapp-group .info-action{background:#bd245c;color:white}
 body[data-page="infos"] main{display:flex;flex-direction:column}.admin-ribbon{display:flex;align-items:center;justify-content:center;min-height:48px;width:60px;margin:auto auto 0;padding:8px}.admin-ribbon .title-ribbon{width:26px;height:38px}
 @media(max-width:600px){.organizer-row{grid-template-columns:52px 1fr 68px;gap:4px}.organizer-row>strong{font-size:11px}.organizer-row .info-action{font-size:10px;padding:4px}}
+/* Tropical foliage and October Rose ribbons frame practical information. */
+.info-card{position:relative;isolation:isolate;overflow:hidden;background:#fff7fb url('assets/infos-rubans.png') center/100% 100% no-repeat}
+.info-card:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#fff8fbd9,#fff8fbf5 25%,#fff8fbf5 75%,#fff8fb99)}
+.info-card h2,.info-card p,.info-card address,.organizer-row>strong{text-shadow:0 1px 3px white}
+.info-card .info-action{background:#fce0ebed}.whatsapp-group .info-action{background:#bd245cf5}
