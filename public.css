@@ -5,11 +5,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 @media(max-width:350px){.hero-copy h1{font-size:54px}.activity-grid{grid-template-columns:1fr}.hero-pills span{font-size:8px}}
 
 /* Public header: matching October Rose crests and full-width navigation band. */
-body[data-space="public"] .header-top{grid-template-columns:96px minmax(0,1fr) 96px;padding:10px 18px;gap:12px}
-body[data-space="public"] .header-logo{width:96px;height:96px}
+body[data-space="public"] .header-top{grid-template-columns:76px minmax(0,1fr) 76px;padding:6px 18px;gap:12px}
+body[data-space="public"] .header-logo{width:76px;height:76px}
 body[data-space="public"] .header-nav-band{background:#fce0eb;border-top:1px solid #f5c5d8}
-body[data-space="public"] header nav{padding:7px 8px;gap:5px}
+body[data-space="public"] header nav{padding:4px 8px;gap:5px}
 body[data-space="public"] header nav a{color:#772243;transition:background-color .15s,color .15s}
 body[data-space="public"] header nav a:hover{background:#f8c5d9}
 body[data-space="public"] header nav a.active{background:#d41467;color:#fff;font-weight:800}
-@media(max-width:600px){body[data-space="public"] .header-top{grid-template-columns:70px minmax(0,1fr) 70px;padding:8px 12px;gap:8px}body[data-space="public"] .header-logo{width:70px;height:70px}body[data-space="public"] .header-event span{font-size:7px;letter-spacing:.7px}body[data-space="public"] .header-event strong{font-size:20px}}
+@media(max-width:600px){body[data-space="public"] .header-top{grid-template-columns:56px minmax(0,1fr) 56px;padding:4px 12px;gap:8px}body[data-space="public"] .header-logo{width:56px;height:56px}body[data-space="public"] .header-event span{font-size:7px;letter-spacing:.7px}body[data-space="public"] .header-event strong{font-size:20px}}
+
+body[data-space="public"] header nav a{min-height:44px;padding:3px 2px}
