@@ -1,0 +1,6 @@
+#install-suggestion{position:fixed;z-index:90;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));display:flex;gap:12px;padding:16px;border:1px solid #f5bdd5;border-radius:18px;background:#fff8fc;box-shadow:0 8px 40px #5c183b40;color:#542139}
+#install-suggestion img{width:58px;height:58px;border-radius:13px;flex:none}
+#install-suggestion strong{font-size:15px;line-height:1.25;display:block}#install-suggestion p{font-size:13px;line-height:1.4;margin:5px 0 10px}
+.install-actions{display:flex;flex-wrap:wrap;gap:8px}.install-actions button{padding:9px 12px;font-size:13px;min-height:40px}.install-actions .install-decline{background:white;color:#722649;border:1px solid #dfb1c5}
+.install-info{display:flex;justify-content:flex-end;margin:0 0 9px}.install-info button{padding:9px 14px;font-size:13px}
+#install-guide{width:min(430px,calc(100% - 28px));max-height:85dvh;overflow:auto;padding:24px;border:1px solid #f5bdd5;border-radius:22px;color:#542139;background:#fff8fc}#install-guide::backdrop{background:#35132680}#install-guide h2{font-size:23px;margin:12px 0}#install-guide li{margin:10px 0;line-height:1.45}#install-guide ol{padding-left:22px}.install-guide-icon{width:76px;height:76px;border-radius:17px}.install-note{font-size:13px;line-height:1.5}#install-guide form{margin-top:16px}
