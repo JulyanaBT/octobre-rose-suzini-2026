@@ -8,6 +8,7 @@ if (config.mode === 'live') {
 const message = text => `<div class="notice" role="status">${esc(text)}</div>`;
 const title = text => `<div class="page-head"><div class="eyebrow">TC SUZINI · OCTOBRE ROSE</div><h1>${text}</h1></div>`;
 
+export function invalidateLive() { generation++; }
 export function renderLive(page, main) {
   if (config.mode !== 'live') return false;
   const current = ++generation;
@@ -42,30 +43,37 @@ export function renderLive(page, main) {
     }).catch(error => { if (current === generation) main.innerHTML = title('Inscription') + message(error.message); });
     return true;
   }
-  if (page !== 'organisation') {
+  if (!['organisation','admin','club'].includes(page)) {
     main.innerHTML = title(page === 'tennis' ? 'Le TMC tennis se prépare.' : 'L’Americano beach tennis.') + message('Les matchs et le classement seront disponibles lorsque l’organisation sportive sera prête.');
     return true;
   }
-  main.innerHTML = title('Espace organisateur.');
+  const adminPage = page !== 'club';
+  main.innerHTML = title(adminPage ? 'Administration.' : 'Espace Club.');
   async function list() {
-    const rows = await backend.registrations();
+    if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
+    const events = await backend.events();
+    const eventId = document.querySelector('#event-select')?.value || events[0]?.id;
+    const rows = eventId ? await backend.registrations(eventId) : [];
+    const event = events.find(e=>e.id===eventId);
     if (current !== generation) return;
-    main.innerHTML = title('Les inscriptions à la journée.') + `<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Se déconnecter</button></div><p>${rows.length} inscription(s). Les affectations sportives seront ajoutées dans une prochaine étape.</p><div class="grid">${rows.map(row => `<article class="card"><h3>${esc(row.nickname)}</h3><p>${esc(row.first_name)} ${esc(row.last_name)}</p><p>${esc(row.email)}</p></article>`).join('')}</div><p id="admin-status" role="status"></p>`;
+    main.innerHTML = title(adminPage ? 'Administration des événements.' : 'Mes événements.') + `<label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label>` + `<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Se déconnecter</button></div><p>${rows.length} inscription(s). Les affectations sportives seront ajoutées dans une prochaine étape.</p><div class="grid">${rows.map(row => `<article class="card"><h3>${esc(row.nickname)}</h3><p>${esc(row.first_name)} ${esc(row.last_name)}</p><p>${esc(row.email)}</p></article>`).join('')}</div><p id="admin-status" role="status"></p>${event ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
+    document.querySelector('#event-select').onchange=()=>list().catch(error=>document.querySelector('#admin-status').textContent=error.message);
+    for(const [selector,action] of [['#event-form',backend.updateEvent],['#access-form',backend.setClubAccess]]) { const form=document.querySelector(selector); if(form)form.onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(form));data.target_event=eventId;if('allow_access' in data)data.allow_access=data.allow_access==='true';const button=form.querySelector('button');button.disabled=true;try{await action(data);document.querySelector('#admin-status').textContent='Modification enregistrée.';}catch(error){document.querySelector('#admin-status').textContent=error.message;}finally{button.disabled=false;}}; }
     document.querySelector('#refresh').onclick = async event => {
       event.target.disabled = true;
       try { await list(); } catch (error) { if (current === generation) { document.querySelector('#admin-status').textContent = error.message; event.target.disabled = false; } }
     };
     document.querySelector('#logout').onclick = async () => {
       signedIn = false; main.innerHTML = title('Déconnexion…');
-      try { await backend.signOut(); } catch {} finally { if (current === generation) renderLive('organisation', main); }
+      try { await backend.signOut(); } catch {} finally { if (current === generation) renderLive(page, main); }
     };
   }
   if (signedIn) {
     main.innerHTML += message('Chargement des inscriptions…');
-    list().catch(error => { if (current === generation) { signedIn = false; renderLive('organisation', main); document.querySelector('#login-status').textContent = error.message; } });
+    list().catch(error => { if (current === generation) { signedIn = false; renderLive(page, main); document.querySelector('#login-status').textContent = error.message; } });
     return true;
   }
-  main.innerHTML += `<section class="card"><p>Accès réservé aux comptes autorisés par le club. La session se ferme lorsque vous rechargez cette page.</p><form id="login"><label>E-mail<input name="email" type="email" autocomplete="username" required></label><label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button></form><p id="login-status" role="status" aria-live="polite"></p></section>`;
+  main.innerHTML += `<section class="card"><p>${adminPage ? 'Accès personnel de l’administrateur, prévu pour ordinateur.' : 'Connectez-vous pour retrouver les événements qui vous sont attribués.'} La session se ferme lorsque vous rechargez cette page.</p><form id="login"><label>E-mail<input name="email" type="email" autocomplete="username" required></label><label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button></form><p id="login-status" role="status" aria-live="polite"></p></section>`;
   document.querySelector('#login').onsubmit = async event => {
     event.preventDefault();
     const form = event.target, data = new FormData(form), button = form.querySelector('button');

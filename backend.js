@@ -4,7 +4,7 @@ export function createBackend(config, fetcher = globalThis.fetch) {
     throw new Error('La connexion aux inscriptions n’est pas encore configurée.');
   }
   // Session remains in memory: a reload requires signing in again.
-  let token = null;
+  let token = null, role = null;
   async function request(path, {body, authorized = false} = {}) {
     const headers = {apikey: config.publishableKey, 'Content-Type': 'application/json'};
     if (authorized) {
@@ -43,13 +43,18 @@ export function createBackend(config, fetcher = globalThis.fetch) {
       token = session.access_token;
       try {
         const roles = await request('/rest/v1/organizers?select=user_id', {authorized: true});
-        if (!roles?.length) throw new Error('Ce compte ne dispose pas d’un accès organisateur.');
-      } catch (error) { token = null; throw error; }
+        role = roles?.length ? 'admin' : 'club';
+        if (role === 'club') { const memberships = await request('/rest/v1/event_memberships?select=event_id', {authorized: true}); if (!memberships?.length) throw new Error('Aucun événement ne vous est attribué. Contactez l’administrateur.'); }
+      } catch (error) { token = null; role = null; throw error; }
     },
     async signOut() {
       try { if (token) await request('/auth/v1/logout', {body: {}, authorized: true}); }
-      finally { token = null; }
+      finally { token = null; role = null; }
     },
-    registrations: () => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at&order=created_at.desc', {authorized: true}),
+    role: () => role,
+    events: () => request('/rest/v1/events?select=id,title,event_date,location&order=event_date', {authorized:true}),
+    setClubAccess: data => request('/rest/v1/rpc/set_club_access', {body:data,authorized:true}),
+    updateEvent: data => request('/rest/v1/rpc/update_event_details', {body:data,authorized:true}),
+    registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
   };
 }

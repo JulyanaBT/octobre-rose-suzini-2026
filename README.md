@@ -29,3 +29,13 @@ Avant ouverture des inscriptions : valider les champs, capacités, modalités d�
 ## Provenance
 
 Moteur et logos adaptés du dépôt JulyanaBT/portesouvertes2026. La référence de classement dans `tests/original-ranking.txt` ne contient aucune configuration de l’ancien service.
+
+## Espaces et droits
+
+- Public : accueil mobile, activités, matchs et classement en attente, infos et inscription commune.
+- Admin (`#admin`, ancien lien `#organisation` conservé) : compte propriétaire présent dans `organizers`, interface adaptée à l’ordinateur et attribution/retrait des accès Club.
+- Club (`#club`) : connexion obligatoire, événements attribués uniquement via `event_memberships`. Gestion mobile des informations de l’événement et consultation de ses inscrits.
+
+La migration `002_spaces.sql` a été appliquée. Les politiques RLS filtrent les événements et les inscriptions côté serveur ; masquer un lien n’est pas une protection. Aucun compte Club réel n’a encore été attribué. Les comptes sont créés dans Supabase, puis autorisés par l’Admin sur un événement précis. La création de nouveaux événements et la gestion sportive partagée restent à développer.
+
+Tests : `node --test tests/*.test.js` (16 cas), et `tests/rbac.sql` exécuté dans Supabase avec fixtures annulées en fin de transaction : sans affectation, aucune inscription ; Club, inscriptions de son événement seulement ; événement tiers invisible ; aucun accès anonyme aux contacts.
