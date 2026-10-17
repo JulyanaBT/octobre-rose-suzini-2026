@@ -1,4 +1,4 @@
-import {publicHeader,publicPage} from './public.js?v=20261017-nav6';
+import {publicHeader,publicPage} from './public.js?v=20261017-infos';
 import {renderLive,invalidateLive} from './live.js?v=20261017-inscription';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js';
 const KEY='suzini-octobre-rose-preview-v1';
