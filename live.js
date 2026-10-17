@@ -1,4 +1,4 @@
-import {createBackend} from './backend.js';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-inscription';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -19,25 +19,32 @@ export function renderLive(page, main) {
     main.innerHTML = title('Rejoindre la journée.') + message('Vérification de l’ouverture des inscriptions…');
     backend.settings().then(({open}) => {
       if (current !== generation) return;
-      if (!open) { main.innerHTML = title('Les inscriptions ouvrent bientôt.') + message('Le club finalise les modalités de la journée. Revenez prochainement.'); return; }
-      main.innerHTML = title('Une inscription pour la journée.') + `<section class="card"><p>Les affectations au beach tennis et au tennis seront organisées ensuite par le club. Cette inscription ne réserve pas une place dans un tournoi particulier.</p>
+
+      main.innerHTML = title('Une inscription pour la journée.') + `<section class="card registration-card">${!open ? message("Les inscriptions ne sont pas encore ouvertes. Vous pouvez préparer votre nom sportif ci-dessous.") : ''}<p>Les affectations au beach tennis et au tennis seront organisées ensuite par le club. Cette inscription ne réserve pas une place dans un tournoi particulier.</p>
       <form id="live-register"><div class="form-grid">
       <label>Prénom<input name="first_name" required maxlength="40" autocomplete="given-name"></label>
       <label>Nom<input name="last_name" required maxlength="60" autocomplete="family-name"></label>
-      <label class="full">Prénom ou surnom sportif<input name="nickname" required maxlength="40" autocomplete="nickname"><small>Ce nom servira à vous appeler pour les activités.</small></label>
+      <label class="full">Surnom (facultatif)<input name="nickname" maxlength="40" autocomplete="nickname" placeholder="Laisser vide pour utiliser le nom proposé"><small id="nickname-preview" aria-live="polite">Sans surnom : prénom + initiale du nom.</small></label>
       <label class="full">E-mail<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
       <p class="full smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Elles ne sont pas affichées aux autres visiteurs.</p>
-      <button class="full">Envoyer mon inscription</button></div></form><div id="registration-status" role="status" aria-live="polite"></div></section>`;
+      <button class="full" ${!open ? 'disabled' : ''}>${open ? 'Envoyer mon inscription' : 'Inscriptions bientôt ouvertes'}</button></div></form><div id="registration-status" role="status" aria-live="polite"></div></section>`;
+      const registrationForm = document.querySelector('#live-register');
+      registrationForm.addEventListener('input', () => {
+        const fields = registrationForm.elements;
+        const name = fields.nickname.value.trim() || suggestedNickname(fields.first_name.value, fields.last_name.value);
+        document.querySelector('#nickname-preview').textContent = name ? `Nom sportif proposé : ${name}${fields.nickname.value.trim() ? '' : ' — un numéro sera ajouté si nécessaire.'}` : 'Sans surnom : prénom + initiale du nom.';
+      });
       document.querySelector('#live-register').addEventListener('submit', async event => {
         event.preventDefault();
+        if (!open) return;
         const form = event.target, button = form.querySelector('button'), status = document.querySelector('#registration-status');
         const data = Object.fromEntries([...new FormData(form)].map(([key,value]) => [key,value.trim()]));
-        if (Object.values(data).some(value => !value)) { status.textContent = 'Merci de compléter tous les champs.'; return; }
+        if (['first_name','last_name','email'].some(key => !data[key])) { status.textContent = 'Merci de compléter tous les champs.'; return; }
         button.disabled = true; status.textContent = 'Envoi en cours…';
         try {
-          const id = await backend.register(data);
+          const {id,nickname} = await registerWithNickname(backend.register, data);
           if (current !== generation) return;
-          form.remove(); status.textContent = `Votre inscription à la journée est enregistrée. Référence : ${id}. Aucun e-mail automatique n’est envoyé pour le moment.`;
+          form.remove(); status.textContent = `Votre inscription à la journée est enregistrée sous le nom ${nickname}. Référence : ${id}. Aucun e-mail automatique n’est envoyé pour le moment.`;
         } catch (error) { if (current === generation) { status.textContent = error.message; button.disabled = false; } }
       });
     }).catch(error => { if (current === generation) main.innerHTML = title('Inscription') + message(error.message); });

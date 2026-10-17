@@ -58,3 +58,21 @@ export function createBackend(config, fetcher = globalThis.fetch) {
     registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
   };
 }
+
+export function suggestedNickname(first, last, number = 1) {
+  const base = `${first.trim()} ${Array.from(last.trim())[0]?.toLocaleUpperCase('fr') || ''}`.trim();
+  const suffix = number > 1 ? ` ${number}` : '';
+  return base.slice(0, 40 - suffix.length).trimEnd() + suffix;
+}
+export async function registerWithNickname(register, data) {
+  const automatic = !data.nickname.trim();
+  for (let number = 1; number <= 100; number++) {
+    const nickname = automatic ? suggestedNickname(data.first_name, data.last_name, number) : data.nickname.trim();
+    try { return {id: await register({...data, nickname}), nickname}; }
+    catch (error) {
+      // Retry only a confirmed uniqueness rejection, never an uncertain network failure.
+      if (!automatic || error.message !== 'Ce surnom est indisponible. Ajoutez une initiale.') throw error;
+    }
+  }
+  throw new Error('Choisissez un surnom personnel pour terminer votre inscription.');
+}

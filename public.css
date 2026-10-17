@@ -75,3 +75,10 @@ a.home-item{border-radius:13px}
 @media(max-width:600px){body[data-space="public"] header nav a{font-size:9px;min-width:0}.home-time{font-size:12px;margin-top:4px}}
 
 header nav a>span svg{display:block;width:21px;height:21px}
+/* Compact mobile registration. */
+body[data-page="inscription"] main{padding-top:10px;padding-bottom:10px}
+body[data-page="inscription"] .page-head{margin:0 0 10px}
+body[data-page="inscription"] .page-head h1{font-size:26px;margin:4px 0}
+.registration-card{padding:16px}.registration-card>p{font-size:12px;margin:8px 0}.registration-card .notice{font-size:12px;padding:8px}
+.registration-card .form-grid{gap:10px}.registration-card label{font-size:13px}.registration-card input{padding:10px;min-height:44px}.registration-card small{font-size:11px}.registration-card .smalltext{font-size:11px;margin:0}
+@media(max-width:600px){.registration-card .form-grid{grid-template-columns:1fr 1fr}.registration-card .full{grid-column:1/-1}.registration-card{padding:12px}}
