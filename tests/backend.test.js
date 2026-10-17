@@ -19,9 +19,9 @@ test('public registration sends only a write RPC and no bearer token', async () 
   assert.equal(calls.length,1);
 });
 test('an authenticated user without organizer membership cannot read via client', async () => {
-  const replies=[response({access_token:'test'}),response([])];
+  const replies=[response({access_token:'test'}),response([]),response([])];
   const backend=createBackend(config,async()=>replies.shift());
-  await assert.rejects(backend.signIn('a@example.org','test'),/accès organisateur/);
+  await assert.rejects(backend.signIn('a@example.org','test'),/événement ne vous est attribué/);
   await assert.rejects(backend.registrations(),/Connectez-vous/);
 });
 test('organizer session is cleared even when logout network call fails', async () => {
@@ -46,4 +46,16 @@ test('network failure never claims registration success or retries automatically
   const backend=createBackend(config,async()=>{count++;throw new Error('offline');});
   await assert.rejects(backend.register({}),/réception n’a pas pu être confirmée/);
   assert.equal(count,1);
+});
+test('club membership grants club identity, never admin identity', async () => {
+  const replies=[response({access_token:'club'}),response([]),response([{event_id:'assigned'}])];
+  const backend=createBackend(config,async()=>replies.shift());
+  await backend.signIn('club@example.org','test');
+  assert.equal(backend.role(),'club');
+});
+test('admin identity requires server organizer membership', async () => {
+  const replies=[response({access_token:'admin'}),response([{user_id:'admin'}])];
+  const backend=createBackend(config,async()=>replies.shift());
+  await backend.signIn('admin@example.org','test');
+  assert.equal(backend.role(),'admin');
 });
