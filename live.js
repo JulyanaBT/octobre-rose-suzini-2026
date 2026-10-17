@@ -1,7 +1,9 @@
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-inscription';
+import {accessManager,activationPage} from './access.js?v=20261017-admin';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-admin';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
+let restored = false;
 if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
 }
@@ -15,6 +17,7 @@ export function renderLive(page, main) {
   document.querySelector('.preview').textContent = 'TC SUZINI · OCTOBRE ROSE 2026';
   if (['accueil','programme'].includes(page)) return false;
   if (setupError) { main.innerHTML = title('Les inscriptions se préparent.') + message(setupError); return true; }
+  if(page.startsWith('activation')){activationPage(backend,main,page,()=>current===generation);return true;}
   if (page === 'inscription') {
     main.innerHTML = title('Rejoindre la journée.') + message('Vérification de l’ouverture des inscriptions…');
     backend.settings().then(({open}) => {
@@ -55,9 +58,11 @@ export function renderLive(page, main) {
     return true;
   }
   const adminPage = page !== 'club';
+  if(!restored){ main.innerHTML=title('Connexion…');backend.restore().then(value=>{signedIn=value;restored=true;if(current===generation)renderLive(page,main);}).catch(()=>{restored=true;if(current===generation)renderLive(page,main);});return true;}
   main.innerHTML = title(adminPage ? 'Administration.' : 'Espace Club.');
   async function list() {
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
+    if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     const events = await backend.events();
     const eventId = document.querySelector('#event-select')?.value || events[0]?.id;
     const rows = eventId ? await backend.registrations(eventId) : [];
@@ -77,10 +82,10 @@ export function renderLive(page, main) {
   }
   if (signedIn) {
     main.innerHTML += message('Chargement des inscriptions…');
-    list().catch(error => { if (current === generation) { signedIn = false; renderLive(page, main); document.querySelector('#login-status').textContent = error.message; } });
+    list().catch(error => { if (current === generation) { signedIn = false; renderLive(page, main); if(document.querySelector('#login-status'))document.querySelector('#login-status').textContent = error.message; } });
     return true;
   }
-  main.innerHTML += `<section class="card"><p>${adminPage ? 'Accès personnel de l’administrateur, prévu pour ordinateur.' : 'Connectez-vous pour retrouver les événements qui vous sont attribués.'} La session se ferme lorsque vous rechargez cette page.</p><form id="login"><label>E-mail<input name="email" type="email" autocomplete="username" required></label><label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button></form><p id="login-status" role="status" aria-live="polite"></p></section>`;
+  main.innerHTML += `<section class="card"><p>${adminPage ? 'Accès personnel de l’administrateur, prévu pour ordinateur.' : 'Connectez-vous pour retrouver les événements qui vous sont attribués.'} Votre connexion sera conservée sur cet appareil jusqu’à votre déconnexion ou l’expiration de la session.</p><form id="login"><label>${adminPage ? 'E-mail administrateur' : 'Identifiant ou e-mail'}<input name="email" type="text" autocomplete="username" required></label><label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button>Se connecter</button></form><p id="login-status" role="status" aria-live="polite"></p></section>`;
   document.querySelector('#login').onsubmit = async event => {
     event.preventDefault();
     const form = event.target, data = new FormData(form), button = form.querySelector('button');
@@ -89,7 +94,7 @@ export function renderLive(page, main) {
       await backend.signIn(data.get('email').trim(), data.get('password'));
       signedIn = true;
       if (current === generation) await list();
-    } catch (error) { if (current === generation) { document.querySelector('#login-status').textContent = error.message; button.disabled = false; } }
+    } catch (error) { if (current === generation) { if(document.querySelector('#login-status'))document.querySelector('#login-status').textContent = error.message; button.disabled = false; } }
     finally { form.querySelector('[name="password"]').value = ''; }
   };
   return true;
