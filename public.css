@@ -65,3 +65,13 @@ button.sponsor-logo{display:flex;align-items:center;justify-content:center;backg
 footer>.sponsor-strip{flex-basis:100%}
 @media(max-width:600px){.sponsor-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 7px}button.sponsor-logo{height:43px}.sponsor-strip{padding:6px}.sponsor-heading{font-size:7px;margin-bottom:3px}}
 @media(max-width:600px) and (max-height:600px){body[data-page="accueil"] main{gap:5px}.sponsor-heading{font-size:6px}button.sponsor-logo{height:34px}.sponsor-grid{gap:3px 6px}.sponsor-strip{padding:4px}.home-intro h1{font-size:22px}.home-item{min-height:58px}.home-intro p{font-size:10px}}
+
+/* Six compact public sections, with practical information separate from prevention. */
+body[data-space="public"] header nav{grid-template-columns:repeat(6,minmax(0,1fr));max-width:760px;gap:3px}
+body:not([data-space="public"]) header nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+body[data-page="accueil"] footer:empty{display:none}
+.home-time{display:inline-block;font-size:13px;font-weight:800;color:#8d254e;margin-top:5px}
+a.home-item{border-radius:13px}
+@media(max-width:600px){body[data-space="public"] header nav a{font-size:9px;min-width:0}.home-time{font-size:12px;margin-top:4px}}
+
+header nav a>span svg{display:block;width:21px;height:21px}
