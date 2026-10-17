@@ -3,7 +3,7 @@ import {createBackend,suggestedNickname,registerWithNickname} from './backend.js
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
-let restored = false;
+let restored = false, selectedClubEvent = null;
 if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
 }
@@ -53,22 +53,27 @@ export function renderLive(page, main) {
     }).catch(error => { if (current === generation) main.innerHTML = title('Inscription') + message(error.message); });
     return true;
   }
-  if (!['organisation','admin','club'].includes(page)) {
+  const clubPage = page === 'club' || page.startsWith('club-');
+  if (!['organisation','admin','club'].includes(page) && !clubPage) {
     main.innerHTML = title(page === 'tennis' ? 'Le TMC tennis se prépare.' : 'L’Americano beach tennis.') + message('Les matchs et le classement seront disponibles lorsque l’organisation sportive sera prête.');
     return true;
   }
-  const adminPage = page !== 'club';
+  const adminPage = !clubPage;
   if(!restored){ main.innerHTML=title('Connexion…');backend.restore().then(value=>{signedIn=value;restored=true;if(current===generation)renderLive(page,main);}).catch(()=>{restored=true;if(current===generation)renderLive(page,main);});return true;}
   main.innerHTML = title(adminPage ? 'Administration.' : 'Espace Club.');
   async function list() {
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
+    if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
     const events = await backend.events();
-    const eventId = document.querySelector('#event-select')?.value || events[0]?.id;
-    const rows = eventId ? await backend.registrations(eventId) : [];
+    const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
+    const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
+    selectedClubEvent = eventId;
+    const inscriptionsPage = page === 'club' || page === 'club-inscriptions';
+    const rows = eventId && inscriptionsPage ? await backend.registrations(eventId) : [];
     const event = events.find(e=>e.id===eventId);
     if (current !== generation) return;
-    main.innerHTML = title(adminPage ? 'Administration des événements.' : 'Mes événements.') + `<label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label>` + `<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Se déconnecter</button></div><p>${rows.length} inscription(s). Les affectations sportives seront ajoutées dans une prochaine étape.</p><div class="grid">${rows.map(row => `<article class="card"><h3>${esc(row.nickname)}</h3><p>${esc(row.first_name)} ${esc(row.last_name)}</p><p>${esc(row.email)}</p></article>`).join('')}</div><p id="admin-status" role="status"></p>${event ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
+    main.innerHTML = title(({ 'club':'Inscriptions.', 'club-inscriptions':'Inscriptions.', 'club-raquettes':'Raquettes en partage.', 'club-surprise':'Surprises.', 'club-information':'Sensibilisation & prévention.', 'club-buffet':'Buffet.', 'club-infos':'Infos de l’événement.' })[page] || 'Espace Club.') + `<label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label>` + `<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Se déconnecter</button></div>${inscriptionsPage ? `<p>${rows.length} inscription(s). Les affectations sportives seront ajoutées dans une prochaine étape.</p><div class="grid">${rows.map(row => `<article class="card"><h3>${esc(row.nickname)}</h3><p>${esc(row.first_name)} ${esc(row.last_name)}</p><p>${esc(row.email)}</p></article>`).join('')}</div>` : (!events.length ? message("Aucun événement ne vous est attribué pour le moment.") : page === 'club-infos' ? '' : `<section class="card"><h2>Gestion de cette activité</h2><p>Les outils de gestion de cette rubrique seront ajoutés à la prochaine étape.</p></section>`)}<p id="admin-status" role="status"></p>${event && page === 'club-infos' ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
     document.querySelector('#event-select').onchange=()=>list().catch(error=>document.querySelector('#admin-status').textContent=error.message);
     for(const [selector,action] of [['#event-form',backend.updateEvent],['#access-form',backend.setClubAccess]]) { const form=document.querySelector(selector); if(form)form.onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(form));data.target_event=eventId;if('allow_access' in data)data.allow_access=data.allow_access==='true';const button=form.querySelector('button');button.disabled=true;try{await action(data);document.querySelector('#admin-status').textContent='Modification enregistrée.';}catch(error){document.querySelector('#admin-status').textContent=error.message;}finally{button.disabled=false;}}; }
     document.querySelector('#refresh').onclick = async event => {

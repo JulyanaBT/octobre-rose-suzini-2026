@@ -111,3 +111,17 @@ body[data-page="infos"] main{display:flex;flex-direction:column}.admin-ribbon{di
 body[data-space="admin"]{background:#fffdf3}body[data-space="admin"] header{background:#ffe36a;border-bottom-color:#dbb62f;width:100%}body[data-space="admin"] .header-top{grid-template-columns:76px 1fr 76px}body[data-space="admin"] .header-logo{width:76px;height:76px}body[data-space="admin"] .header-event span{color:#65500f}body[data-space="admin"] .header-nav-band{background:#fff6ca}body:not([data-space="public"]) header nav{grid-template-columns:repeat(3,1fr)}body[data-space="admin"] header nav a.active{background:#ffd52a;color:#342900}body[data-space="admin"] footer{display:none}body[data-space="admin"] button{background:#f1cc37;color:#342900}body[data-space="admin"] .card{border-color:#ead78b}body[data-space="admin"] .notice{background:#fff8d8;border-color:#d2a900;color:#5f4b00}
 .access-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.access-person{border-top:1px solid #e7dab1;padding:14px 0}.access-person h3{margin:0 0 5px}.access-person p{font-size:13px}.invite-result{overflow-wrap:anywhere}.access-events{display:grid;gap:6px}.access-events label{display:flex;align-items:center;gap:8px}.access-events input{width:auto}.access-status{min-height:24px}.session-note{font-size:13px}.access-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center}
 @media(max-width:700px){.access-layout{grid-template-columns:1fr}body[data-space="admin"] .header-top{grid-template-columns:56px 1fr 56px}body[data-space="admin"] .header-logo{width:56px;height:56px}.access-toolbar{flex-wrap:wrap}}
+
+/* Club: dedicated dark header, six mobile sections, no partner footer. */
+body[data-space="club"] header{background:#151216;border-bottom-color:#ed4d98;width:100%}
+body[data-space="club"] .header-top{grid-template-columns:76px minmax(0,1fr) 76px;padding:6px 18px}
+body[data-space="club"] .header-logo{width:76px;height:76px}
+body[data-space="club"] .header-event{color:#fff}body[data-space="club"] .header-event span{color:#ff8cbe}
+body[data-space="club"] .header-nav-band{background:#242027;border-top:1px solid #4c3443}
+body[data-space="club"] header nav{grid-template-columns:repeat(6,minmax(0,1fr));max-width:760px;gap:3px;padding:4px 8px}
+body[data-space="club"] header nav a{color:#fff;min-width:0;min-height:44px;padding:4px 1px}
+body[data-space="club"] header nav a:hover{background:#513143}body[data-space="club"] header nav a.active{background:#d41467;color:#fff}
+body[data-space="club"] footer{display:none}body[data-space="club"] main{padding:14px 16px 24px;width:100%}
+body[data-space="club"] .page-head{margin-bottom:14px}body[data-space="club"] .page-head h1{font-size:28px}
+body[data-space="club"] .toolbar{flex-wrap:wrap;gap:8px}body[data-space="club"] .card p{overflow-wrap:anywhere}
+@media(max-width:600px){body[data-space="club"] .header-top{grid-template-columns:56px minmax(0,1fr) 56px;padding:4px 12px;gap:8px}body[data-space="club"] .header-logo{width:56px;height:56px}body[data-space="club"] .header-event span{font-size:7px;letter-spacing:.7px}body[data-space="club"] header nav a{font-size:9px;letter-spacing:-.2px}body[data-space="club"] .grid{grid-template-columns:1fr}body[data-space="club"] .card{padding:15px}}
