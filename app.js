@@ -1,4 +1,4 @@
-import {publicHeader,publicPage} from './public.js';
+import {publicHeader,publicPage} from './public.js?v=20261017-floral-title';
 import {renderLive,invalidateLive} from './live.js';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js';
 const KEY='suzini-octobre-rose-preview-v1';

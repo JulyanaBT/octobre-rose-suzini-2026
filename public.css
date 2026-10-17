@@ -52,3 +52,6 @@ body[data-page="accueil"] main{line-height:1.25}
 @media(max-width:600px) and (max-height:680px){.home-intro h1{font-size:26px}}
 @media(max-width:600px) and (max-height:600px){.home-intro h1{font-size:24px}.home-intro p{max-width:none}}
 @media(min-width:601px){.home-intro:before{background:linear-gradient(90deg,#fff0f9 0%,#fff0f9 49%,#fff0f9b0 58%,#fff0f910 76%)}}
+
+body[data-space="public"] .header-event .event-title{display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:-.6px;color:var(--ink);font-size:23px;white-space:nowrap;line-height:1.2}.event-title b{font-weight:850}.title-flower{width:23px;height:23px;flex-shrink:0}.title-ribbon{width:18px;height:29px;flex-shrink:0}
+@media(max-width:600px){body[data-space="public"] .header-event .event-title{gap:3px;font-size:clamp(15px,4.8vw,20px)}.title-flower{width:clamp(14px,4vw,19px);height:21px}.title-ribbon{width:13px;height:24px}}
