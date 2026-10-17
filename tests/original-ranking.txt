@@ -1,0 +1,734 @@
+// Reference from JulyanaBT/portesouvertes2026/js/classement.js
+function getRounds() {
+
+  const roundsMap =
+    new Map();
+
+
+  matches.forEach(
+    match => {
+
+      const roundNumber =
+        Number(
+          match.roundNumber
+        );
+
+
+      if (
+        !Number.isFinite(
+          roundNumber
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        !roundsMap.has(
+          roundNumber
+        )
+      ) {
+
+        roundsMap.set(
+          roundNumber,
+          {
+            roundNumber,
+            matches: [],
+            bench: []
+          }
+        );
+
+      }
+
+
+      const round =
+        roundsMap.get(
+          roundNumber
+        );
+
+
+      round.matches.push(
+        match
+      );
+
+
+      /*
+       * Le banc est enregistré dans
+       * chaque match du même tour.
+       *
+       * On ne garde donc qu'une seule
+       * copie du banc.
+       */
+
+      if (
+        round.bench.length === 0 &&
+        Array.isArray(
+          match.bench
+        )
+      ) {
+
+        round.bench =
+          [...match.bench];
+
+      }
+
+    }
+  );
+
+
+  return Array
+    .from(
+      roundsMap.values()
+    )
+    .sort(
+      (a, b) =>
+        a.roundNumber -
+        b.roundNumber
+    );
+
+}
+
+
+/* ========================================
+   STATISTIQUES DE BASE
+======================================== */
+
+function makeBaseStats() {
+
+  const stats =
+    new Map();
+
+
+  players.forEach(
+    player => {
+
+      stats.set(
+        player.id,
+        {
+          id:
+            player.id,
+
+          nickname:
+            getNickname(
+              player
+            ),
+
+          matches:
+            0,
+
+          wins:
+            0,
+
+          losses:
+            0,
+
+          matchPointsTotal:
+            0,
+
+          scoredTotal:
+            0,
+
+          concededTotal:
+            0,
+
+          gameDiffTotal:
+            0,
+
+          activeTurns:
+            0,
+
+          benchTurns:
+            0,
+
+          bonusGamePoints:
+            0,
+
+          rankingMatchPoints:
+            0,
+
+          rankingScored:
+            0,
+
+          rankingConceded:
+            0,
+
+          rankingDiff:
+            0,
+
+          countedResults:
+            0,
+
+          results:
+            []
+        }
+      );
+
+    }
+  );
+
+
+  return stats;
+
+}
+
+
+/* ========================================
+   BONUS PAR TOUR ACTIF
+======================================== */
+
+function addRoundBonus(stats) {
+
+  const rounds =
+    getRounds();
+
+
+  rounds.forEach(
+    round => {
+
+      const activeInRound =
+        new Set();
+
+
+      /*
+       * Joueurs programmés
+       * sur les terrains.
+       */
+
+      round.matches.forEach(
+        match => {
+
+          const teamA =
+            Array.isArray(
+              match.teamA
+            )
+              ? match.teamA
+              : [];
+
+
+          const teamB =
+            Array.isArray(
+              match.teamB
+            )
+              ? match.teamB
+              : [];
+
+
+          [
+            ...teamA,
+            ...teamB
+          ].forEach(
+            playerId => {
+
+              activeInRound.add(
+                playerId
+              );
+
+            }
+          );
+
+        }
+      );
+
+
+      /*
+       * Joueurs sur le banc.
+       */
+
+      round.bench.forEach(
+        playerId => {
+
+          activeInRound.add(
+            playerId
+          );
+
+
+          const row =
+            stats.get(
+              playerId
+            );
+
+
+          if (row) {
+
+            row.benchTurns++;
+
+          }
+
+        }
+      );
+
+
+      /*
+       * Chaque joueur présent dans
+       * la rotation reçoit :
+       *
+       * +1 tour actif
+       * +2 points de jeu bonus
+       */
+
+      activeInRound.forEach(
+        playerId => {
+
+          const row =
+            stats.get(
+              playerId
+            );
+
+
+          if (!row) {
+            return;
+          }
+
+
+          row.activeTurns++;
+
+          row.bonusGamePoints +=
+            2;
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* ========================================
+   MATCHS TERMINES
+======================================== */
+
+function getCompletedMatches() {
+
+  return matches.filter(
+    match =>
+      match.status ===
+      "completed"
+  );
+
+}
+
+
+/* ========================================
+   CALCUL DU CLASSEMENT
+======================================== */
+
+function computeRanking() {
+
+  const stats =
+    makeBaseStats();
+
+
+  /*
+   * Bonus lié aux tours.
+   */
+
+  addRoundBonus(
+    stats
+  );
+
+
+  /*
+   * Résultats des matchs terminés.
+   */
+
+  getCompletedMatches()
+    .forEach(
+      match => {
+
+        const scoreA =
+          Number(
+            match.scoreA
+          );
+
+
+        const scoreB =
+          Number(
+            match.scoreB
+          );
+
+
+        if (
+          !Number.isFinite(
+            scoreA
+          ) ||
+          !Number.isFinite(
+            scoreB
+          ) ||
+          scoreA === scoreB
+        ) {
+
+          return;
+
+        }
+
+
+        const teamA =
+          Array.isArray(
+            match.teamA
+          )
+            ? match.teamA
+            : [];
+
+
+        const teamB =
+          Array.isArray(
+            match.teamB
+          )
+            ? match.teamB
+            : [];
+
+
+        const teamAWon =
+          scoreA > scoreB;
+
+
+        /*
+         * EQUIPE A
+         */
+
+        teamA.forEach(
+          playerId => {
+
+            const row =
+              stats.get(
+                playerId
+              );
+
+
+            if (!row) {
+              return;
+            }
+
+
+            const matchPoints =
+              teamAWon
+                ? 2
+                : 1;
+
+
+            row.matches++;
+
+            row.wins +=
+              teamAWon
+                ? 1
+                : 0;
+
+            row.losses +=
+              teamAWon
+                ? 0
+                : 1;
+
+            row.matchPointsTotal +=
+              matchPoints;
+
+            row.scoredTotal +=
+              scoreA;
+
+            row.concededTotal +=
+              scoreB;
+
+            row.gameDiffTotal +=
+              scoreA -
+              scoreB;
+
+
+            row.results.push({
+              matchPoints,
+              scored:
+                scoreA,
+              conceded:
+                scoreB,
+              diff:
+                scoreA -
+                scoreB
+            });
+
+          }
+        );
+
+
+        /*
+         * EQUIPE B
+         */
+
+        teamB.forEach(
+          playerId => {
+
+            const row =
+              stats.get(
+                playerId
+              );
+
+
+            if (!row) {
+              return;
+            }
+
+
+            const matchPoints =
+              teamAWon
+                ? 1
+                : 2;
+
+
+            row.matches++;
+
+            row.wins +=
+              teamAWon
+                ? 0
+                : 1;
+
+            row.losses +=
+              teamAWon
+                ? 1
+                : 0;
+
+            row.matchPointsTotal +=
+              matchPoints;
+
+            row.scoredTotal +=
+              scoreB;
+
+            row.concededTotal +=
+              scoreA;
+
+            row.gameDiffTotal +=
+              scoreB -
+              scoreA;
+
+
+            row.results.push({
+              matchPoints,
+              scored:
+                scoreB,
+              conceded:
+                scoreA,
+              diff:
+                scoreB -
+                scoreA
+            });
+
+          }
+        );
+
+      }
+    );
+
+
+  const rows =
+    Array.from(
+      stats.values()
+    );
+
+
+  /*
+   * ========================================
+   * 10 MEILLEURS RESULTATS
+   * ========================================
+   *
+   * On classe d'abord les résultats
+   * individuels du joueur :
+   *
+   * 1. points match
+   * 2. différence de jeux
+   * 3. jeux marqués
+   *
+   * Puis on ne conserve que les 10 meilleurs.
+   */
+
+  rows.forEach(
+    row => {
+
+      const bestTen =
+        [...row.results]
+          .sort(
+            (a, b) => {
+
+              if (
+                b.matchPoints !==
+                a.matchPoints
+              ) {
+
+                return (
+                  b.matchPoints -
+                  a.matchPoints
+                );
+
+              }
+
+
+              if (
+                b.diff !==
+                a.diff
+              ) {
+
+                return (
+                  b.diff -
+                  a.diff
+                );
+
+              }
+
+
+              return (
+                b.scored -
+                a.scored
+              );
+
+            }
+          )
+          .slice(
+            0,
+            10
+          );
+
+
+      row.countedResults =
+        bestTen.length;
+
+
+      /*
+       * Points match
+       */
+
+      row.rankingMatchPoints =
+        bestTen.reduce(
+          (
+            total,
+            result
+          ) =>
+            total +
+            result.matchPoints,
+          0
+        );
+
+
+      /*
+       * Jeux marqués.
+       *
+       * Comme sur le Summer Tour,
+       * le bonus des tours actifs
+       * est ajouté ici.
+       */
+
+      row.rankingScored =
+        bestTen.reduce(
+          (
+            total,
+            result
+          ) =>
+            total +
+            result.scored,
+          0
+        )
+        +
+        row.bonusGamePoints;
+
+
+      /*
+       * Jeux encaissés
+       */
+
+      row.rankingConceded =
+        bestTen.reduce(
+          (
+            total,
+            result
+          ) =>
+            total +
+            result.conceded,
+          0
+        );
+
+
+      /*
+       * Différence
+       */
+
+      row.rankingDiff =
+        row.rankingScored -
+        row.rankingConceded;
+
+    }
+  );
+
+
+  /*
+   * ========================================
+   * ORDRE DU CLASSEMENT
+   * ========================================
+   *
+   * 1. points match
+   * 2. différence de jeux
+   * 3. jeux marqués
+   * 4. surnom
+   */
+
+  return rows.sort(
+    (a, b) => {
+
+      if (
+        b.rankingMatchPoints !==
+        a.rankingMatchPoints
+      ) {
+
+        return (
+          b.rankingMatchPoints -
+          a.rankingMatchPoints
+        );
+
+      }
+
+
+      if (
+        b.rankingDiff !==
+        a.rankingDiff
+      ) {
+
+        return (
+          b.rankingDiff -
+          a.rankingDiff
+        );
+
+      }
+
+
+      if (
+        b.rankingScored !==
+        a.rankingScored
+      ) {
+
+        return (
+          b.rankingScored -
+          a.rankingScored
+        );
+
+      }
+
+
+      return a.nickname
+        .localeCompare(
+          b.nickname,
+          "fr",
+          {
+            sensitivity:
+              "base",
+
+            numeric:
+              true
+          }
+        );
+
+    }
+  );
+
+}
+
+
+/* ========================================
+   CARTE CLASSEMENT
+======================================== */
+
