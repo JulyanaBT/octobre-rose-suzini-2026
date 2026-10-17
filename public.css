@@ -55,3 +55,13 @@ body[data-page="accueil"] main{line-height:1.25}
 
 body[data-space="public"] .header-event .event-title{display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:-.6px;color:var(--ink);font-size:23px;white-space:nowrap;line-height:1.2}.event-title b{font-weight:850}.title-flower{width:23px;height:23px;flex-shrink:0}.title-ribbon{width:18px;height:29px;flex-shrink:0}
 @media(max-width:600px){body[data-space="public"] .header-event .event-title{gap:3px;font-size:clamp(15px,4.8vw,20px)}.title-flower{width:clamp(14px,4vw,19px);height:21px}.title-ribbon{width:13px;height:24px}}
+
+.sponsor-strip{margin-top:auto;width:100%;background:#fff;border:1px solid #eed9e2;border-radius:12px;padding:7px 8px;flex-shrink:0;text-align:center;line-height:1.2}
+.sponsor-heading{display:block;color:#8d254e;font-size:8px;letter-spacing:1px;font-weight:800;margin-bottom:4px}
+.sponsor-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;align-items:center}
+button.sponsor-logo{display:flex;align-items:center;justify-content:center;background:white;border:0;border-radius:5px;padding:2px;width:100%;height:65px;min-height:0;overflow:hidden;cursor:zoom-in}
+.sponsor-logo img{display:block;max-width:100%;width:100%;height:100%;object-fit:contain}.sponsor-logo:hover{background:#fff3f8}
+.sponsor-dialog{padding:20px;border:1px solid #edb6cf;border-radius:18px;width:min(500px,calc(100% - 28px));max-height:85svh;text-align:center;background:white;color:#301626}.sponsor-dialog::backdrop{background:#30162688}.sponsor-dialog h2{font-size:20px}.sponsor-dialog>img{width:100%;height: min(50svh,350px);object-fit:contain}.sponsor-dialog button{min-width:100px}
+footer>.sponsor-strip{flex-basis:100%}
+@media(max-width:600px){.sponsor-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 7px}button.sponsor-logo{height:43px}.sponsor-strip{padding:6px}.sponsor-heading{font-size:7px;margin-bottom:3px}}
+@media(max-width:600px) and (max-height:600px){body[data-page="accueil"] main{gap:5px}.sponsor-heading{font-size:6px}button.sponsor-logo{height:34px}.sponsor-grid{gap:3px 6px}.sponsor-strip{padding:4px}.home-intro h1{font-size:22px}.home-item{min-height:58px}.home-intro p{font-size:10px}}

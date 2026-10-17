@@ -1,3 +1,8 @@
+const sponsors = [
+ ['tc-suzini.jpeg','TC Suzini'],['restauration-a-confirmer.png','Restauration — à confirmer'],['ligue-de-guyane.jpeg','Ligue de Guyane'],['octobre-rose-collectivite-guyane.png','Octobre Rose — Collectivité territoriale de Guyane'],['ligue-contre-le-cancer.png','La Ligue contre le cancer'],['agence-nationale-du-sport.png','Agence nationale du sport'],['passing-shot-kafe.jpeg','Passing Shot Kafé'],['julyana-bt-octobre-rose.png','Julyana BT']
+];
+export function sponsorStrip() { return `<aside class="sponsor-strip" aria-label="Sponsors et partenaires"><span class="sponsor-heading">AVEC NOS PARTENAIRES</span><div class="sponsor-grid">${sponsors.map(([file,name],i)=>`<button type="button" class="sponsor-logo sponsor-${i}" data-sponsor="${i}" aria-label="Agrandir le logo : ${name}"><img src="assets/sponsor-${file}" alt="${name}" loading="eager"></button>`).join('')}</div></aside>`; }
+const originalFooter = document.querySelector('footer').innerHTML;
 const icon = {home:'⌂', calendar:'▦', match:'◉', ranking:'♜', info:'ⓘ'};
 const headerFlower = `<svg class="title-flower" viewBox="0 0 40 40" aria-hidden="true"><g fill="#ed408e" stroke="#bc1c61" stroke-width=".6"><ellipse cx="20" cy="12" rx="8" ry="11"/><ellipse cx="20" cy="12" rx="8" ry="11" transform="rotate(72 20 20)"/><ellipse cx="20" cy="12" rx="8" ry="11" transform="rotate(144 20 20)"/><ellipse cx="20" cy="12" rx="8" ry="11" transform="rotate(216 20 20)"/><ellipse cx="20" cy="12" rx="8" ry="11" transform="rotate(288 20 20)"/></g><circle cx="20" cy="20" r="5" fill="#ffb7d6"/><path d="m20 20 8-8" stroke="#fbd765" stroke-width="2"/><circle cx="29" cy="11" r="2" fill="#ffdf76"/></svg>`;
 const headerRibbon = `<svg class="title-ribbon" viewBox="0 0 28 40" aria-hidden="true"><path d="M8 3C11-1 17-1 20 3c7 9-2 19-12 35l-7-6C12 18 22 7 16 5c-2-1-4-1-6 0Z" fill="#e72c82"/><path d="M8 3C2 9 7 18 20 38l7-6C15 17 5 7 12 5Z" fill="#f970af"/><path d="M8 3c3-3 9-3 12 0l-4 3c-2-1-4-1-6 0Z" fill="#b91e65"/></svg>`;
@@ -5,6 +10,7 @@ const decoratedTitle = `<span class="event-title" aria-label="Octobre Rose">${he
 export function publicHeader(page) {
   const privatePage = ['admin','organisation','club'].includes(page);
   document.body.dataset.page = page;
+  document.querySelector('footer').innerHTML = (!privatePage && page !== 'accueil' ? sponsorStrip() : '') + originalFooter;
   document.body.dataset.space = privatePage ? (page === 'club' ? 'club' : 'admin') : 'public';
   document.querySelector('header').innerHTML = `<div class="header-top"><a class="header-logo" href="#accueil" aria-label="Accueil TC Suzini"><img src="${privatePage ? 'assets/logo-suzini.png' : 'assets/logo-beach-rose.png'}" alt="Beach Tennis Suzini"></a><a class="header-event" href="#accueil"><span>TC SUZINI · 24 OCTOBRE 2026</span><strong>${privatePage ? (page === 'club' ? 'Espace Club' : 'Administration') : decoratedTitle}</strong></a><a class="header-logo" href="#accueil" aria-label="${privatePage ? 'Accueil JulyanaBT' : 'Accueil Commission sportive TC Suzini'}"><img src="${privatePage ? 'assets/logo-julyana.png' : 'assets/logo-tennis-rose.png'}" alt="${privatePage ? 'Jul’Yana Beach Tennis' : 'Commission sportive TC Suzini'}"></a></div><div class="header-nav-band"><nav aria-label="Navigation ${privatePage ? 'des espaces' : 'publique'}">${(privatePage ? [['accueil','⌂','Public'],['club','▦','Club'],['admin','⚙','Admin']] : [['accueil',icon.home,'Accueil'],['programme',icon.calendar,'Activités'],['matchs',icon.match,'Matchs'],['classement',icon.ranking,'Classement'],['infos',icon.info,'Infos']]).map(([route,symbol,label])=>`<a href="#${route}" ${page===route?'aria-current="page" class="active"':''}><span aria-hidden="true">${symbol}</span>${label}</a>`).join('')}</nav></div>`;
 }
@@ -22,7 +28,7 @@ const homeIcons = {
 };
 export function publicHome() { return `<section class="home-intro" aria-labelledby="home-title"><div class="home-intro-copy"><span class="home-kicker">SPORT · PARTAGE · SOLIDARITÉ</span><h1 id="home-title">Ensemble,<br><span>jouons plus fort !</span></h1><p>Les femmes au cœur.<br><strong>Toutes et tous sur le terrain.</strong></p></div><a class="button home-register" href="#inscription">S’inscrire à la journée <span aria-hidden="true">↗</span></a></section><section class="home-four" aria-label="Les quatre rendez-vous de la journée">${[
  ['raquettes','Raquettes en partage','Tennis & beach tennis'],['surprise','Surprises au rendez-vous','Des moments à découvrir'],['information',"Stand d’information",'Sensibilisation & prévention'],['buffet','Buffet dînatoire convivial','Pour prolonger la journée']
-].map(([id,title,sub])=>`<button class="home-item" type="button" data-home-detail="${id}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${homeIcons[id]}</svg><strong>${title}</strong><span>${sub}</span></button>`).join('')}</section><aside class="home-sponsors" aria-label="Sponsors et partenaires"><span>AVEC NOS PARTENAIRES</span><p>Les partenaires de la journée seront présentés ici.</p></aside><dialog class="home-dialog" aria-labelledby="home-dialog-title"><form method="dialog"><button class="dialog-close" aria-label="Fermer">×</button></form><h2 id="home-dialog-title"></h2><p class="home-dialog-text"></p><form method="dialog"><button class="button">Fermer</button></form></dialog>`; }
+].map(([id,title,sub])=>`<button class="home-item" type="button" data-home-detail="${id}" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${homeIcons[id]}</svg><strong>${title}</strong><span>${sub}</span></button>`).join('')}</section>${sponsorStrip()}<dialog class="home-dialog" aria-labelledby="home-dialog-title"><form method="dialog"><button class="dialog-close" aria-label="Fermer">×</button></form><h2 id="home-dialog-title"></h2><p class="home-dialog-text"></p><form method="dialog"><button class="button">Fermer</button></form></dialog>`; }
 document.addEventListener('click', event => {
  const trigger = event.target.closest('[data-home-detail]');
  if (!trigger) return;
@@ -40,3 +46,13 @@ export function publicPage(page) {
  if(['matchs','classement'].includes(page))return heading('SUIVRE LA JOURNÉE',page==='matchs'?'Les matchs.':'Le classement.','Tennis et beach tennis au TC Suzini')+`<section class="card empty"><span class="empty-symbol" aria-hidden="true">${page==='matchs'?'◉':'♜'}</span><h2>${page==='matchs'?'La programmation se prépare.':'Les premiers résultats arrivent bientôt.'}</h2><p>${page==='matchs'?'Les rencontres seront affichées ici une fois les formats et les créneaux confirmés.':'Les classements seront disponibles après le début des rencontres.'}</p><a class="button secondary" href="#programme">Découvrir les activités</a></section>`;
  return null;
 }
+
+document.addEventListener('click', event => {
+ const trigger = event.target.closest('[data-sponsor]');
+ if (!trigger) return;
+ const [file,name] = sponsors[Number(trigger.dataset.sponsor)];
+ let dialog = document.querySelector('.sponsor-dialog');
+ if (!dialog) { dialog=document.createElement('dialog'); dialog.className='sponsor-dialog'; document.body.append(dialog); }
+ dialog.innerHTML = `<h2 id="sponsor-dialog-title">${name}</h2><img src="assets/sponsor-${file}" alt="${name}"><form method="dialog"><button>Fermer</button></form>`;
+ dialog.setAttribute('aria-labelledby','sponsor-dialog-title'); dialog.showModal();
+});
