@@ -96,3 +96,8 @@ body:is([data-page="infos"],[data-page="contacts"]) footer{background:transparen
 nav.info-tabs{position:static;width:100%;padding:0;box-shadow:none;border:0;background:transparent;overflow:visible}
 @media(max-width:600px) and (max-height:600px){body[data-page="contacts"] .info-action{min-height:28px;margin-top:2px;padding:3px 6px}body[data-page="contacts"] .info-card{padding:4px 8px}body[data-page="contacts"] .info-cards{gap:4px}body[data-page="contacts"] .info-tabs a{min-height:34px;padding:5px}}
 @media(max-width:600px) and (max-height:600px){body[data-page="contacts"] .info-heading{padding:5px 10px}body[data-page="contacts"] footer{padding-bottom:2px}}
+
+body:is([data-page="infos"],[data-page="contacts"]) header{width:100%}
+.contacts-cards{grid-template-columns:1fr;max-width:700px;margin:auto}.organizer-row{display:grid;grid-template-columns:65px 1fr 85px;align-items:center;gap:6px}.organizer-row>strong{font-size:12px}.whatsapp-group{background:#fff0f6}.whatsapp-group .info-action{background:#bd245c;color:white}
+body[data-page="infos"] main{display:flex;flex-direction:column}.admin-ribbon{display:flex;align-items:center;justify-content:center;min-height:48px;width:60px;margin:auto auto 0;padding:8px}.admin-ribbon .title-ribbon{width:26px;height:38px}
+@media(max-width:600px){.organizer-row{grid-template-columns:52px 1fr 68px;gap:4px}.organizer-row>strong{font-size:11px}.organizer-row .info-action{font-size:10px;padding:4px}}
