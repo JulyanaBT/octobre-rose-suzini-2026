@@ -44,6 +44,11 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     }
     return data;
   }
+  function registrationRow(data) {
+    const row=Array.isArray(data)?data[0]:data;
+    if(!row?.id)throw new Error('La réponse n’a pas pu être confirmée. Actualisez la liste avant de réessayer.');
+    return row;
+  }
   return {
     async settings() {
       const rows = await request('/rest/v1/event_settings?select=registration_open');
@@ -73,8 +78,8 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     events: () => request('/rest/v1/events?select=id,title,event_date,location&order=event_date', {authorized:true}),
     setClubAccess: data => request('/rest/v1/rpc/set_club_access', {body:data,authorized:true}),
     updateEvent: data => request('/rest/v1/rpc/update_event_details', {body:data,authorized:true}),
-    saveRegistration: data => request('/rest/v1/rpc/club_save_registration',{body:data,authorized:true}),
-    setParticipation: data => request('/rest/v1/rpc/club_set_participation',{body:data,authorized:true}),
+    saveRegistration: data => request('/rest/v1/rpc/club_save_registration',{body:data,authorized:true}).then(registrationRow),
+    setParticipation: data => request('/rest/v1/rpc/club_set_participation',{body:data,authorized:true}).then(registrationRow),
     registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
   };
 }

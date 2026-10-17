@@ -16,13 +16,14 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
   $('#club-people').innerHTML=filtered.length?filtered.map(r=>`<article class="club-person ${r.present?'is-present':''}" data-id="${esc(r.id)}"><div class="club-person-heading"><div><h2>${esc(r.nickname)}</h2><p>${esc(r.first_name)} ${esc(r.last_name)}</p></div><button type="button" class="secondary" data-edit="${esc(r.id)}" ${busy.has(r.id)?'disabled':''}>Modifier</button></div><p class="club-person-email">${esc(r.email)}</p><div class="club-person-actions"><button type="button" data-presence="${esc(r.id)}" aria-pressed="${r.present}" ${busy.has(r.id)?'disabled':''}>${r.present?'✓ Présent · marquer parti':'Pointer l’arrivée'}</button><label>Activité actuelle<select data-activity="${esc(r.id)}" ${!r.present||busy.has(r.id)?'disabled':''}>${Object.entries(activities).map(([v,n])=>`<option value="${v}" ${r.activity===v?'selected':''}>${n}</option>`).join('')}</select></label></div>${!r.present?'<small>Pointez l’arrivée pour affecter une activité.</small>':''}</article>`).join(''):`<p class="empty">${rows.length?'Aucun inscrit ne correspond aux filtres.':'Aucun inscrit pour le moment.'}</p>`;
  }
  async function participation(row,present,activity) {
-  if(busy.has(row.id))return;
+  if(!isCurrent()||busy.has(row.id))return;
   busy.add(row.id);draw();status('Enregistrement…');
   try { const saved=await backend.setParticipation({p_event:eventId,p_id:row.id,p_version:row.version,p_present:present,p_activity:activity});if(isCurrent()){update(saved);status(present?`${saved.nickname} : présence et activité enregistrées.`:`${saved.nickname} marqué non présent et retiré de son activité.`);} }
   catch(error){status(error.message);}
   finally{busy.delete(row.id);draw();}
  }
  function edit(row) {
+  if(!isCurrent())return;
   const dialog=$('#club-person-dialog'), id=row?.id||crypto.randomUUID(), version=row?.version??null;
   dialog.innerHTML=`<h2 id="club-person-title">${row?'Modifier un inscrit':'Ajouter un inscrit'}</h2><form id="club-person-form"><div class="form-grid"><label>Prénom<input name="first_name" required maxlength="40" autocomplete="given-name" value="${esc(row?.first_name)}"></label><label>Nom<input name="last_name" required maxlength="60" autocomplete="family-name" value="${esc(row?.last_name)}"></label><label class="full">Surnom (facultatif)<input name="nickname" maxlength="40" value="${esc(row?.nickname)}"><small id="club-nickname-hint">Sans surnom : prénom + initiale du nom.</small></label><label class="full">E-mail<input name="email" type="email" required maxlength="150" autocomplete="email" value="${esc(row?.email)}"></label></div><p id="club-save-status" role="status" aria-live="polite"></p><div class="club-dialog-actions"><button type="submit">Enregistrer</button><button type="button" class="secondary" id="club-cancel">Annuler</button></div></form>`;
   const form=dialog.querySelector('form');let saving=false;
@@ -30,7 +31,7 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
   dialog.querySelector('#club-cancel').onclick=()=>dialog.close();
   form.oninput=()=>{const f=form.elements;dialog.querySelector('#club-nickname-hint').textContent=f.nickname.value.trim()||`Proposition : ${suggestedNickname(f.first_name.value,f.last_name.value)||'prénom + initiale'} (numérotée si nécessaire).`;};
   form.onsubmit=async e=>{
-   e.preventDefault();if(saving)return;
+   e.preventDefault();if(saving||!isCurrent())return;
    const data=Object.fromEntries([...new FormData(form)].map(([k,v])=>[k,v.trim()]));
    if(!data.first_name||!data.last_name||!data.email)return;
    saving=true;form.querySelectorAll('button,input').forEach(el=>el.disabled=true);dialog.querySelector('#club-save-status').textContent='Enregistrement…';
