@@ -51,7 +51,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
   }
   return {
     async settings() {
-      const rows = await request('/rest/v1/event_settings?select=registration_open');
+      const rows = await request('/rest/v1/events?select=registration_open&id=eq.20261024-0000-4000-8000-000000000001');
       return {open: rows?.[0]?.registration_open === true};
     },
     register: data => request('/rest/v1/rpc/register_participant', {body: data}),
@@ -78,6 +78,12 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     events: () => request('/rest/v1/events?select=id,title,event_date,location&order=event_date', {authorized:true}),
     setClubAccess: data => request('/rest/v1/rpc/set_club_access', {body:data,authorized:true}),
     updateEvent: data => request('/rest/v1/rpc/update_event_details', {body:data,authorized:true}),
+    async registrationSettings(eventId) {
+      const rows=await request('/rest/v1/events?select=registration_open,registration_version&id=eq.'+encodeURIComponent(eventId),{authorized:true});
+      if(!rows?.length)throw new Error('Cet événement ne vous est pas attribué.');
+      return {open:rows[0].registration_open===true,version:rows[0].registration_version};
+    },
+    setRegistrationOpen: data => request('/rest/v1/rpc/set_registration_open',{body:data,authorized:true}),
     saveRegistration: data => request('/rest/v1/rpc/club_save_registration',{body:data,authorized:true}).then(registrationRow),
     setParticipation: data => request('/rest/v1/rpc/club_set_participation',{body:data,authorized:true}).then(registrationRow),
     registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),

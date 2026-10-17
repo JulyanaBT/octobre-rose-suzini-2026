@@ -1,17 +1,17 @@
-import {mountRegistrations} from './club-registrations.js?v=20261017-inscrits';
+import {mountRegistrations} from './club-registrations.js?v=20261017-statut';
 import {accessManager,activationPage} from './access.js?v=20261017-simple';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-inscrits';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-statut';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
-let restored = false, selectedClubEvent = null;
+let restored = false, selectedClubEvent = null, registrationWatch=null;
 if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
 }
 const message = text => `<div class="notice" role="status">${esc(text)}</div>`;
 const title = text => `<div class="page-head"><div class="eyebrow">TC SUZINI · OCTOBRE ROSE</div><h1>${text}</h1></div>`;
 
-export function invalidateLive() { generation++; }
+export function invalidateLive() { generation++;clearInterval(registrationWatch);registrationWatch=null; }
 export function renderLive(page, main) {
   if (config.mode !== 'live') return false;
   const current = ++generation;
@@ -20,10 +20,16 @@ export function renderLive(page, main) {
   if (setupError) { main.innerHTML = title('Les inscriptions se préparent.') + message(setupError); return true; }
   if(page.startsWith('activation')){activationPage(backend,main,page,()=>current===generation);return true;}
   if (page === 'inscription') {
+    clearInterval(registrationWatch);
+    registrationWatch=setInterval(async()=>{
+      if(current!==generation||document.hidden)return;
+      try{const {open}=await backend.settings();if(current===generation && !open && main.querySelector('#live-register')){clearInterval(registrationWatch);main.innerHTML=title('Inscriptions suspendues.')+message('Les inscriptions viennent d’être suspendues. Merci de revenir plus tard.');}}catch{}
+    },15000);
     main.innerHTML = title('Rejoindre la journée.') + message('Vérification de l’ouverture des inscriptions…');
     backend.settings().then(({open}) => {
       if (current !== generation) return;
 
+      if(!open){clearInterval(registrationWatch);main.innerHTML=title('Inscriptions suspendues.')+message('Les inscriptions à la journée sont actuellement suspendues. Merci de revenir plus tard.')+'<a class="button secondary" href="#accueil">Retour à l’accueil</a>';return;}
       main.innerHTML = title('Une inscription pour la journée.') + `<section class="card registration-card">${!open ? message("Les inscriptions ne sont pas encore ouvertes. Vous pouvez préparer votre nom sportif ci-dessous.") : ''}<p>Les affectations au beach tennis et au tennis seront organisées ensuite par le club. Cette inscription ne réserve pas une place dans un tournoi particulier.</p>
       <form id="live-register"><div class="form-grid">
       <label>Prénom<input name="first_name" required maxlength="40" autocomplete="given-name"></label>
@@ -49,7 +55,7 @@ export function renderLive(page, main) {
           const {id,nickname} = await registerWithNickname(backend.register, data);
           if (current !== generation) return;
           form.remove(); status.textContent = `Votre inscription à la journée est enregistrée sous le nom ${nickname}. Référence : ${id}. Aucun e-mail automatique n’est envoyé pour le moment.`;
-        } catch (error) { if (current === generation) { status.textContent = error.message; button.disabled = false; } }
+        } catch (error) { if (current === generation) { status.textContent = error.message; if(error.message.includes('inscriptions sont suspendues'))form.remove();else button.disabled = false; } }
       });
     }).catch(error => { if (current === generation) main.innerHTML = title('Inscription') + message(error.message); });
     return true;
