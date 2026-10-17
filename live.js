@@ -1,5 +1,5 @@
-import {accessManager,activationPage} from './access.js?v=20261017-admin';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-admin';
+import {accessManager,activationPage} from './access.js?v=20261017-simple';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-simple';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
