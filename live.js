@@ -1,6 +1,6 @@
-import {mountRegistrations} from './club-registrations.js?v=20261017-statut';
-import {accessManager,activationPage} from './access.js?v=20261017-simple';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261017-statut';
+import {mountRegistrations} from './club-registrations.js?v=20261018-sports';
+import {accessManager,activationPage} from './access.js?v=20261018-sports';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-sports';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -35,7 +35,7 @@ export function renderLive(page, main) {
       <label>Prénom<input name="first_name" required maxlength="40" autocomplete="given-name"></label>
       <label>Nom<input name="last_name" required maxlength="60" autocomplete="family-name"></label>
       <label class="full">Surnom (facultatif)<input name="nickname" maxlength="40" autocomplete="nickname" placeholder="Laisser vide pour utiliser le nom proposé"><small id="nickname-preview" aria-live="polite">Sans surnom : prénom + initiale du nom.</small></label>
-      <label class="full">E-mail<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
+      <fieldset class="full sport-choices"><legend>Je souhaite participer à</legend><label><input type="checkbox" name="wants_bt"> Beach tennis</label><label><input type="checkbox" name="wants_tennis"> Tennis</label><small>Cochez un sport ou les deux.</small></fieldset><p class="full smalltext">Prévention : informations à venir, sans inscription pour le moment.</p>
       <p class="full smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Elles ne sont pas affichées aux autres visiteurs.</p>
       <button class="full" ${!open ? 'disabled' : ''}>${open ? 'Envoyer mon inscription' : 'Inscriptions bientôt ouvertes'}</button></div></form><div id="registration-status" role="status" aria-live="polite"></div></section>`;
       const registrationForm = document.querySelector('#live-register');
@@ -49,7 +49,9 @@ export function renderLive(page, main) {
         if (!open) return;
         const form = event.target, button = form.querySelector('button'), status = document.querySelector('#registration-status');
         const data = Object.fromEntries([...new FormData(form)].map(([key,value]) => [key,value.trim()]));
-        if (['first_name','last_name','email'].some(key => !data[key])) { status.textContent = 'Merci de compléter tous les champs.'; return; }
+        data.wants_bt=form.elements.wants_bt.checked;data.wants_tennis=form.elements.wants_tennis.checked;
+        if(!data.wants_bt&&!data.wants_tennis){status.textContent='Choisissez le beach tennis, le tennis ou les deux.';return;}
+        if (['first_name','last_name'].some(key => !data[key])) { status.textContent = 'Merci de compléter tous les champs.'; return; }
         button.disabled = true; status.textContent = 'Envoi en cours…';
         try {
           const {id,nickname} = await registerWithNickname(backend.register, data);
@@ -82,14 +84,11 @@ export function renderLive(page, main) {
     const rows = eventId && inscriptionsPage ? await backend.registrations(eventId) : [];
     const event = events.find(e=>e.id===eventId);
     if (current !== generation || listRequest !== listVersion) return;
-    main.innerHTML = title(({ 'club':'Inscriptions.', 'club-inscriptions':'Inscriptions.', 'club-raquettes':'Raquettes en partage.', 'club-surprise':'Surprises.', 'club-information':'Sensibilisation & prévention.', 'club-buffet':'Buffet.', 'club-infos':'Infos de l’événement.' })[page] || 'Espace Club.') + `<label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label>` + `<div class="toolbar"><button id="refresh">Actualiser</button><button id="logout" class="secondary">Se déconnecter</button></div>${inscriptionsPage ? '<section id="club-registration-manager"></section>' : (!events.length ? message("Aucun événement ne vous est attribué pour le moment.") : page === 'club-infos' ? '' : `<section class="card"><h2>Gestion de cette activité</h2><p>Les outils de gestion de cette rubrique seront ajoutés à la prochaine étape.</p></section>`)}<p id="admin-status" role="status"></p>${event && page === 'club-infos' ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
+    main.innerHTML = (events.length>1 ? `<details class="club-event-picker"><summary>Changer d’événement</summary><label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label></details>` : '') + `${inscriptionsPage ? '<section id="club-registration-manager"></section>' : (!events.length ? message("Aucun événement ne vous est attribué pour le moment.") : page === 'club-infos' ? '' : `<section class="card"><h2>Gestion de cette activité</h2><p>Les outils de gestion de cette rubrique seront ajoutés à la prochaine étape.</p></section>`)}<p id="admin-status" role="status"></p>${event && page === 'club-infos' ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
+    main.insertAdjacentHTML('beforeend','<div class="organizer-logout"><button id="logout" class="secondary">Se déconnecter</button></div>');
     if(inscriptionsPage && eventId)mountRegistrations(document.querySelector('#club-registration-manager'),backend,eventId,rows,()=>current===generation && listRequest===listVersion);
-    document.querySelector('#event-select').onchange=()=>list().catch(error=>document.querySelector('#admin-status').textContent=error.message);
+    if(document.querySelector('#event-select'))document.querySelector('#event-select').onchange=()=>list().catch(error=>document.querySelector('#admin-status').textContent=error.message);
     for(const [selector,action] of [['#event-form',backend.updateEvent],['#access-form',backend.setClubAccess]]) { const form=document.querySelector(selector); if(form)form.onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(form));data.target_event=eventId;if('allow_access' in data)data.allow_access=data.allow_access==='true';const button=form.querySelector('button');button.disabled=true;try{await action(data);document.querySelector('#admin-status').textContent='Modification enregistrée.';}catch(error){document.querySelector('#admin-status').textContent=error.message;}finally{button.disabled=false;}}; }
-    document.querySelector('#refresh').onclick = async event => {
-      event.target.disabled = true;
-      try { await list(); } catch (error) { if (current === generation) { document.querySelector('#admin-status').textContent = error.message; event.target.disabled = false; } }
-    };
     document.querySelector('#logout').onclick = async () => {
       signedIn = false; main.innerHTML = title('Déconnexion…');
       try { await backend.signOut(); } catch {} finally { if (current === generation) renderLive(page, main); }

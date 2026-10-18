@@ -1,5 +1,5 @@
-import {publicHeader,publicPage} from './public.js?v=20261017-statut';
-import {renderLive,invalidateLive} from './live.js?v=20261017-statut';
+import {publicHeader,publicPage} from './public.js?v=20261018-sports';
+import {renderLive,invalidateLive} from './live.js?v=20261018-sports';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});

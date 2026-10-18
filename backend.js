@@ -54,7 +54,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       const rows = await request('/rest/v1/events?select=registration_open&id=eq.20261024-0000-4000-8000-000000000001');
       return {open: rows?.[0]?.registration_open === true};
     },
-    register: data => request('/rest/v1/rpc/register_participant', {body: data}),
+    register: data => request('/rest/v1/rpc/register_sports_participant', {body: data}),
     async signIn(identifier, password) {
       clear();
       const data = identifier.includes('@') ? await request('/auth/v1/token?grant_type=password',{body:{email:identifier,password}}) : (await request('/functions/v1/club-access',{body:{action:'login',username:identifier,password}})).session;
@@ -84,9 +84,9 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       return {open:rows[0].registration_open===true,version:rows[0].registration_version};
     },
     setRegistrationOpen: data => request('/rest/v1/rpc/set_registration_open',{body:data,authorized:true}),
-    saveRegistration: data => request('/rest/v1/rpc/club_save_registration',{body:data,authorized:true}).then(registrationRow),
+    saveRegistration: data => request('/rest/v1/rpc/club_save_sports_registration',{body:data,authorized:true}).then(registrationRow),
     setParticipation: data => request('/rest/v1/rpc/club_set_participation',{body:data,authorized:true}).then(registrationRow),
-    registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
+    registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version,wants_bt,wants_tennis&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
   };
 }
 
