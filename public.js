@@ -105,10 +105,19 @@ document.addEventListener('toggle', event => {
   if (!opened.isConnected || !opened.open) return;
   section.style.removeProperty('padding-bottom');
   const headerHeight = document.querySelector('header')?.getBoundingClientRect().height || 0;
-  const top = Math.max(0, window.scrollY + opened.getBoundingClientRect().top - headerHeight - 8);
+  const tabsHeight = section.querySelector('.prevention-tabs')?.getBoundingClientRect().height || 0;
+  const top = Math.max(0, window.scrollY + opened.getBoundingClientRect().top - headerHeight - tabsHeight - 8);
   // Short topics near the bottom also need enough space to reach the header.
   const available = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   if (top > available) section.style.paddingBottom = `${Math.ceil(top - available)}px`;
   window.scrollTo({top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
  });
 }, true);
+
+// Track the actual header height across mobile orientation and text-size changes.
+const preventionHeader = document.querySelector('header');
+if (preventionHeader) {
+ const updatePreventionOffset = () => document.documentElement.style.setProperty('--prevention-header-height', `${preventionHeader.getBoundingClientRect().height}px`);
+ updatePreventionOffset();
+ new ResizeObserver(updatePreventionOffset).observe(preventionHeader);
+}
