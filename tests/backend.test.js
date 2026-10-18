@@ -10,9 +10,9 @@ test('configuration refuses secret keys and non-Supabase endpoints', () => {
 test('public registration sends only a write RPC and no bearer token', async () => {
   const calls=[];
   const backend=createBackend(config, async (...args)=>{calls.push(args);return response('reference');});
-  const data={first_name:'Camille',last_name:'Exemple',nickname:'Cam',email:'cam@example.org'};
+  const data={first_name:'Camille',last_name:'Exemple',nickname:'Cam',wants_bt:true,wants_tennis:false};
   assert.equal(await backend.register(data),'reference');
-  assert.equal(calls[0][0],config.supabaseUrl+'/rest/v1/rpc/register_participant');
+  assert.equal(calls[0][0],config.supabaseUrl+'/rest/v1/rpc/register_sports_participant');
   assert.deepEqual(JSON.parse(calls[0][1].body),data);
   assert.equal(calls[0][1].headers.Authorization,undefined);
   await assert.rejects(backend.registrations(),/Connectez-vous/);
@@ -58,4 +58,53 @@ test('admin identity requires server organizer membership', async () => {
   const backend=createBackend(config,async()=>replies.shift());
   await backend.signIn('admin@example.org','test');
   assert.equal(backend.role(),'admin');
+});
+function memoryStorage(){const map=new Map();return {getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};}
+test('restores and rotates persisted session, revalidating role on server',async()=>{
+ const storage=memoryStorage();let replies=[response({access_token:'one',refresh_token:'r1',expires_in:3600}),response([{user_id:'owner'}])];
+ const first=createBackend(config,async()=>replies.shift(),storage);await first.signIn('owner@example.org','password');
+ const calls=[];replies=[response({access_token:'two',refresh_token:'r2',expires_in:3600}),response([{user_id:'owner'}])];
+ const second=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();},storage);assert.equal(await second.restore(),true);assert.equal(second.role(),'admin');assert.equal(JSON.parse(calls[0][1].body).refresh_token,'r1');assert.equal(calls[1][1].headers.Authorization,'Bearer two');
+});
+test('revoked refresh token clears remembered session',async()=>{
+ const storage=memoryStorage();storage.setItem('suzini-session-example.supabase.co',JSON.stringify({access_token:'old',refresh_token:'revoked',expires_at:1}));
+ const backend=createBackend(config,async()=>response({},400),storage);assert.equal(await backend.restore(),false);assert.equal(storage.getItem('suzini-session-example.supabase.co'),null);await assert.rejects(backend.events(),/Connectez-vous/);
+});
+test('network outage does not discard remembered refresh token',async()=>{
+ const storage=memoryStorage();storage.setItem('suzini-session-example.supabase.co',JSON.stringify({access_token:'old',refresh_token:'valid',expires_at:1}));
+ const backend=createBackend(config,async()=>{throw Error('offline');},storage);await assert.rejects(backend.restore());assert.ok(storage.getItem('suzini-session-example.supabase.co'));
+});
+test('access management requires an authenticated token',async()=>{
+ let calls=0;const backend=createBackend(config,async()=>{calls++;return response({});});await assert.rejects(backend.access({action:'list'}),/Connectez-vous/);assert.equal(calls,0);
+});
+test('username sign-in delegates to server and never assumes admin',async()=>{
+ const calls=[],replies=[response({session:{access_token:'club',refresh_token:'refresh',expires_in:3600}}),response([]),response([{event_id:'assigned'}])];
+ const backend=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();},memoryStorage());await backend.signIn('maite','test-password');assert.equal(backend.role(),'club');assert.equal(JSON.parse(calls[0][1].body).action,'login');
+});
+test('Club writes require authentication and send event-scoped RPCs', async()=>{
+ const calls=[];let replies=[];
+ const backend=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();},memoryStorage());
+ await assert.rejects(backend.saveRegistration({}),/Connectez-vous/);
+ await assert.rejects(backend.setParticipation({}),/Connectez-vous/);
+ assert.equal(calls.length,0);
+ replies=[response({access_token:'club'}),response([]),response([{event_id:'assigned'}])];
+ await backend.signIn('club@example.org','test');
+ replies=[response([{id:'person',version:1,present:true,activity:'prevention'}])];
+ const payload={p_event:'assigned',p_id:'person',p_version:0,p_present:true,p_activity:'prevention'};
+ const row=await backend.setParticipation(payload);
+ assert.equal(row.activity,'prevention');assert.equal(row.version,1);
+ const [url,request]=calls.at(-1);
+ assert.match(url,/rpc\/club_set_participation$/);assert.equal(request.headers.Authorization,'Bearer club');assert.deepEqual(JSON.parse(request.body),payload);
+ replies=[response({code:'P0001',message:'Cette fiche a été modifiée par un autre gestionnaire.'},400)];
+ await assert.rejects(backend.setParticipation(payload),/autre gestionnaire/);
+});
+test('registration control is authenticated and event scoped; public reads event opening',async()=>{
+ const calls=[],replies=[response([{registration_open:false}])];
+ const backend=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();},memoryStorage());
+ assert.deepEqual(await backend.settings(),{open:false});assert.match(calls[0][0],/events\?select=registration_open&id=eq\./);
+ await assert.rejects(backend.setRegistrationOpen({p_event:'foreign',p_open:true,p_version:0}),/Connectez-vous/);
+ replies.push(response({access_token:'club'}),response([]),response([{event_id:'mine'}]),response([{registration_open:true,registration_version:2}]),response({open:false,version:3}));
+ await backend.signIn('club@example.org','test');assert.deepEqual(await backend.registrationSettings('mine'),{open:true,version:2});
+ assert.deepEqual(await backend.setRegistrationOpen({p_event:'mine',p_open:false,p_version:2}),{open:false,version:3});
+ assert.equal(calls.at(-1)[1].headers.Authorization,'Bearer club');
 });
