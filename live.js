@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261018-publicmobile2';
+import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261018-publicbt';
 import {accessManager,activationPage} from './access.js?v=20261018-publicbt';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-publicbt';

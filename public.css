@@ -195,3 +195,13 @@ nav.practical-tabs{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 8px}
 }
 @media(max-width:600px){.flyer-card img{height:clamp(110px,calc(100svh - 440px),420px)}.install-integrated{margin-bottom:6px}.practical-info .info-cards{gap:5px}}
 @media(max-width:600px) and (max-height:700px){.registration-card .form-grid{gap:4px}.registration-card{padding:7px 9px}.registration-title{margin-bottom:5px}body[data-page="inscription"] footer{padding-top:4px!important}}
+
+/* Home shares the same partner footer; practical tabs start at the same height. */
+body[data-page="accueil"] footer{background:#f4e6ed;padding:25px max(20px,calc((100vw - 1040px)/2));gap:18px}
+body[data-page="accueil"] footer>.sponsor-strip{display:block}
+.home-item{background:#fff7fb url('assets/infos-rubans.png') center/100% 100% no-repeat;position:relative;isolation:isolate;overflow:hidden}
+.home-item::before{background:linear-gradient(90deg,#fff8fbd9,#fff8fbef 25%,#fff8fbef 75%,#fff8fb99)}
+.practical-info{margin:0 auto}
+@media(max-width:600px){body[data-page="accueil"] footer{padding:8px 14px max(8px,env(safe-area-inset-bottom))}body[data-page="accueil"] main{padding-left:14px;padding-right:14px}}
+.home-item:hover{background:#fff7fb url('assets/infos-rubans.png') center/100% 100% no-repeat}
+.home-item:nth-child(n)::before{background:radial-gradient(ellipse at center,#fff9fdf5 20%,#fff9fdd9 54%,#fff9fd40 100%)}
