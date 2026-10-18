@@ -108,3 +108,11 @@ test('registration control is authenticated and event scoped; public reads event
  assert.deepEqual(await backend.setRegistrationOpen({p_event:'mine',p_open:false,p_version:2}),{open:false,version:3});
  assert.equal(calls.at(-1)[1].headers.Authorization,'Bearer club');
 });
+
+test('public sports read needs no session and calls only the public projection',async()=>{
+ let call;const api=createBackend({supabaseUrl:'https://test.supabase.co',publishableKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return {ok:true,json:async()=>({players:[],matches:[]})};},null);
+ assert.deepEqual(await api.publicBeach('event-demo'),{players:[],matches:[]});
+ assert.equal(call.url,'https://test.supabase.co/rest/v1/rpc/public_bt');
+ assert.equal(call.options.headers.Authorization,undefined);
+ assert.deepEqual(JSON.parse(call.options.body),{p_event:'event-demo'});
+});
