@@ -80,11 +80,28 @@ function preventionPage(page) {
  </div><p class="prevention-note">Informations générales · sources consultées le 18 octobre 2026.<br>Pour votre situation personnelle, parlez-en à un professionnel de santé.</p>`}</section>`;
 }
 
-// Keep disclosures exclusive, including browsers without native details grouping.
+// Keep disclosures exclusive and bring the opened topic below the sticky header.
+let preventionScrollFrame;
 document.addEventListener('toggle', event => {
  const opened = event.target;
- if (!opened.matches?.('.prevention-topic') || !opened.open) return;
+ if (!opened.matches?.('.prevention-topic')) return;
+ const section = opened.closest('.prevention');
+ if (!opened.open) {
+  if (!section?.querySelector('.prevention-topic[open]')) section?.style.removeProperty('padding-bottom');
+  return;
+ }
  opened.closest('.prevention-topics')?.querySelectorAll('.prevention-topic[open]').forEach(other => {
   if (other !== opened) other.open = false;
+ });
+ cancelAnimationFrame(preventionScrollFrame);
+ preventionScrollFrame = requestAnimationFrame(() => {
+  if (!opened.isConnected || !opened.open) return;
+  section.style.removeProperty('padding-bottom');
+  const headerHeight = document.querySelector('header')?.getBoundingClientRect().height || 0;
+  const top = Math.max(0, window.scrollY + opened.getBoundingClientRect().top - headerHeight - 8);
+  // Short topics near the bottom also need enough space to reach the header.
+  const available = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  if (top > available) section.style.paddingBottom = `${Math.ceil(top - available)}px`;
+  window.scrollTo({top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
  });
 }, true);
