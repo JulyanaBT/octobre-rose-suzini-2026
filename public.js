@@ -43,6 +43,7 @@ document.addEventListener('click', event => {
 export function publicPage(page) {
  const heading=(label,title,text)=>`<div class="page-head"><div class="eyebrow">${label}</div><h1>${title}</h1><p>${text}</p></div>`;
  if(page==='accueil')return publicHome();
+ if(['raquettes','bt','tennis'].includes(page))return null;
  if(homeDetails[page]) return heading('LA JOURNÉE',homeDetails[page][0],page==='information'?'Sensibilisation & prévention':'')+`<section class="card"><p>${homeDetails[page][1]}</p>${page==='raquettes'?'<div class="toolbar"><a class="button" href="#bt">Beach tennis</a><a class="button" href="#tennis">Tennis</a></div>':''}</section>`;
  if(['infos','contacts'].includes(page)) return practicalInfo(page);
  if(['matchs','classement'].includes(page))return heading('SUIVRE LA JOURNÉE',page==='matchs'?'Les matchs.':'Le classement.','Tennis et beach tennis au TC Suzini')+`<section class="card empty"><span class="empty-symbol" aria-hidden="true">${page==='matchs'?'◉':'♜'}</span><h2>${page==='matchs'?'La programmation se prépare.':'Les premiers résultats arrivent bientôt.'}</h2><p>${page==='matchs'?'Les rencontres seront affichées ici une fois les formats et les créneaux confirmés.':'Les classements seront disponibles après le début des rencontres.'}</p><a class="button secondary" href="#programme">Découvrir les activités</a></section>`;

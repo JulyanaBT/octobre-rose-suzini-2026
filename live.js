@@ -1,7 +1,7 @@
-import {mountRaquettes} from './raquettes.js?v=20261018-raquettes';
-import {mountRegistrations} from './club-registrations.js?v=20261018-raquettes';
-import {accessManager,activationPage} from './access.js?v=20261018-raquettes';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-raquettes';
+import {mountRaquettes} from './raquettes.js?v=20261018-publicbt';
+import {mountRegistrations} from './club-registrations.js?v=20261018-publicbt';
+import {accessManager,activationPage} from './access.js?v=20261018-publicbt';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-publicbt';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -37,7 +37,7 @@ export function renderLive(page, main) {
       <label>Nom<input name="last_name" required maxlength="60" autocomplete="family-name"></label>
       <label class="full">Surnom (facultatif)<input name="nickname" maxlength="40" autocomplete="nickname" placeholder="Laisser vide pour utiliser le nom proposé"><small id="nickname-preview" aria-live="polite">Sans surnom : prénom + initiale du nom.</small></label>
       <fieldset class="full sport-choices"><legend>Je souhaite participer à</legend><label><input type="checkbox" name="wants_bt"> Beach tennis</label><label><input type="checkbox" name="wants_tennis"> Tennis</label><small>Cochez un sport ou les deux.</small></fieldset><p class="full smalltext">Prévention : informations à venir, sans inscription pour le moment.</p>
-      <p class="full smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Elles ne sont pas affichées aux autres visiteurs.</p>
+      <p class="full smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Seuls votre nom sportif et votre suivi beach tennis (joueurs, matchs, classement et statistiques) sont visibles publiquement. Vos coordonnées restent réservées aux organisateurs.</p>
       <button class="full" ${!open ? 'disabled' : ''}>${open ? 'Envoyer mon inscription' : 'Inscriptions bientôt ouvertes'}</button></div></form><div id="registration-status" role="status" aria-live="polite"></div></section>`;
       const registrationForm = document.querySelector('#live-register');
       registrationForm.addEventListener('input', () => {
@@ -63,6 +63,7 @@ export function renderLive(page, main) {
     }).catch(error => { if (current === generation) main.innerHTML = title('Inscription') + message(error.message); });
     return true;
   }
+  if(['raquettes','bt','tennis'].includes(page)){main.innerHTML='<section id="public-raquettes"></section>';mountRaquettes(main.querySelector('#public-raquettes'),backend,'20261024-0000-4000-8000-000000000001',()=>current===generation,{readOnly:true,initialSport:page==='tennis'?'tennis':'bt'});return true;}
   const clubPage = page === 'club' || page.startsWith('club-');
   if (!['organisation','admin','club'].includes(page) && !clubPage) {
     main.innerHTML = title(page === 'tennis' ? 'Le TMC tennis se prépare.' : 'L’Americano beach tennis.') + message('Les matchs et le classement seront disponibles lorsque l’organisation sportive sera prête.');
