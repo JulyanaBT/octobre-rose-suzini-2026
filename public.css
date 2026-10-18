@@ -166,3 +166,5 @@ nav.prevention-tabs{position:static;inset:auto;transform:none;display:grid;grid-
  .prevention-topic summary{min-height:44px;padding:6px 10px}
  .prevention-note{font-size:9px;margin-top:6px}
 }
+
+nav.prevention-tabs{position:sticky;top:var(--prevention-header-height,120px);z-index:15}
