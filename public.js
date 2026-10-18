@@ -87,7 +87,14 @@ document.addEventListener('toggle', event => {
  if (!opened.matches?.('.prevention-topic')) return;
  const section = opened.closest('.prevention');
  if (!opened.open) {
-  if (!section?.querySelector('.prevention-topic[open]')) section?.style.removeProperty('padding-bottom');
+  if (section && !section.querySelector('.prevention-topic[open]')) {
+   cancelAnimationFrame(preventionScrollFrame);
+   section.style.removeProperty('padding-bottom');
+   preventionScrollFrame = requestAnimationFrame(() => {
+    if (!section.isConnected || section.querySelector('.prevention-topic[open]')) return;
+    window.scrollTo({top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+   });
+  }
   return;
  }
  opened.closest('.prevention-topics')?.querySelectorAll('.prevention-topic[open]').forEach(other => {
