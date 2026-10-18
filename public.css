@@ -205,3 +205,34 @@ body[data-page="accueil"] footer>.sponsor-strip{display:block}
 @media(max-width:600px){body[data-page="accueil"] footer{padding:8px 14px max(8px,env(safe-area-inset-bottom))}body[data-page="accueil"] main{padding-left:14px;padding-right:14px}}
 .home-item:hover{background:#fff7fb url('assets/infos-rubans.png') center/100% 100% no-repeat}
 .home-item:nth-child(n)::before{background:radial-gradient(ellipse at center,#fff9fdf5 20%,#fff9fdd9 54%,#fff9fd40 100%)}
+
+/* Club shares the public card language, retaining its black header and no sponsors. */
+body[data-space="club"]{min-height:100svh;display:flex;flex-direction:column;background:#fff7fb}
+body[data-space="club"] header{flex-shrink:0}
+body[data-space="club"] main{flex:1;min-height:0;margin:0 auto;padding:12px 16px 16px}
+body[data-space="club"] footer{display:none}
+body[data-space="club"] :is(.card,.club-person,.registration-control,.empty){border:1px solid #ebc2d3;border-radius:14px;background:linear-gradient(90deg,#fff8fbe8,#fff8fbf5 25%,#fff8fbf5 75%,#fff8fbe8),url('assets/infos-rubans.png') center/cover;color:#60263e;box-shadow:none}
+body[data-space="club"] :is(.card,.club-person,.registration-control){padding:14px}
+body[data-space="club"] .club-person.is-present{border-left:4px solid #d41467}
+body[data-space="club"] .club-person:not(.is-present){border-left:4px solid #bda5b1}
+body[data-space="club"] :is(.card h2,.club-person h2){color:#90234f;font-size:21px;letter-spacing:-.4px}
+body[data-space="club"] .card h3{color:#90234f;font-size:17px}
+body[data-space="club"] .club-status-tabs{padding:4px;gap:4px;border-radius:10px;background:#151216}
+body[data-space="club"] .club-status-tabs button{border:0;border-radius:6px;background:#151216;color:#ff4d9d;padding:7px 4px;min-height:48px}
+body[data-space="club"] .club-status-tabs button[aria-pressed="true"]{background:#ff4d9d;color:#151216}
+body[data-space="club"] .club-status-tabs button b{font-size:21px}
+body[data-space="club"] .club-status-tabs button span{font-size:11px}
+body[data-space="club"] .bt-filters{padding:4px;gap:4px;background:#151216;border-radius:10px}
+body[data-space="club"] .bt-filters button{flex:1;border:0;border-radius:6px;min-height:36px;background:#151216;color:#ff4d9d}
+body[data-space="club"] .bt-filters button[aria-pressed="true"]{background:#ff4d9d;color:#151216}
+body[data-space="club"] :is(.card details,.club-event-picker){border:1px solid #ebc2d3;border-radius:10px;background:#fff8fb;padding:0;margin:8px 0;overflow:hidden}
+body[data-space="club"] :is(.card details,.club-event-picker)>summary{padding:11px 12px;min-height:44px;color:#90234f;font-weight:750;cursor:pointer;background:linear-gradient(90deg,#fff8fbe8,#fff8fbf2),url('assets/infos-rubans.png') center/cover}
+body[data-space="club"] .card details>:not(summary){margin:12px}
+body[data-space="club"] .card details ul{padding-left:20px}
+body[data-space="club"] .club-event-picker>label{padding:10px}
+body[data-space="club"] .club-placeholder{text-align:center;padding:32px 16px}
+body[data-space="club"] .club-placeholder strong{color:#a21c4b}
+body[data-space="club"] input,body[data-space="club"] select{border-radius:8px;border-color:#dfbbcc;background:#fff}
+body[data-space="club"] #admin-status:empty{display:none}
+body[data-space="club"] .organizer-logout{padding-top:24px;padding-bottom:4px}
+@media(max-width:600px){body[data-space="club"] main{padding:8px 14px 12px}body[data-space="club"] .club-register-tools{gap:8px;margin:10px 0}body[data-space="club"] .club-filters{gap:8px}body[data-space="club"] :is(.card,.club-person,.registration-control){padding:12px}body[data-space="club"] .club-placeholder{padding:28px 14px}}
