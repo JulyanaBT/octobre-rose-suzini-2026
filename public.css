@@ -236,3 +236,5 @@ body[data-space="club"] input,body[data-space="club"] select{border-radius:8px;b
 body[data-space="club"] #admin-status:empty{display:none}
 body[data-space="club"] .organizer-logout{padding-top:24px;padding-bottom:4px}
 @media(max-width:600px){body[data-space="club"] main{padding:8px 14px 12px}body[data-space="club"] .club-register-tools{gap:8px;margin:10px 0}body[data-space="club"] .club-filters{gap:8px}body[data-space="club"] :is(.card,.club-person,.registration-control){padding:12px}body[data-space="club"] .club-placeholder{padding:28px 14px}}
+
+.home-location{color:inherit;text-decoration:underline;text-underline-offset:3px}.home-location:focus-visible{outline:2px solid #a21c4b;outline-offset:3px}
