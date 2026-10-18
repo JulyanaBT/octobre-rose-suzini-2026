@@ -168,3 +168,10 @@ nav.prevention-tabs{position:static;inset:auto;transform:none;display:grid;grid-
 }
 
 nav.prevention-tabs{position:sticky;top:var(--prevention-header-height,120px);z-index:15}
+
+/* Public activities awaiting confirmation, with partners kept in view. */
+body:is([data-page="surprise"],[data-page="buffet"]){min-height:100svh;display:flex;flex-direction:column}
+body:is([data-page="surprise"],[data-page="buffet"]) main{width:100%;min-height:0;flex:1;margin:0 auto;padding:14px 20px}
+body:is([data-page="surprise"],[data-page="buffet"]) footer{flex-shrink:0;margin-top:auto}
+.public-pending{width:100%;max-width:760px;margin:0 auto}.public-pending .info-card{text-align:center;padding:32px 16px;border:1px solid #ebc2d3;border-radius:14px}.public-pending h1{font-size:24px;margin:0 0 14px;color:#90234f}.public-pending strong{font-size:16px;color:#a21c4b}
+@media(max-width:600px){body:is([data-page="surprise"],[data-page="buffet"]) main{padding:10px 14px}body:is([data-page="surprise"],[data-page="buffet"]) footer{padding:8px 14px max(8px,env(safe-area-inset-bottom))}}
