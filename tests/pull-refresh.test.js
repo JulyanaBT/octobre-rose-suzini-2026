@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createPullGesture} from '../pull-refresh.js';
+test('only a deliberate downward pull from an allowed start refreshes on release',()=>{const g=createPullGesture();g.start(20,10);assert.equal(g.move(22,40).ready,false);assert.equal(g.end(),false);g.start(20,10);assert.equal(g.move(22,120).ready,true);assert.equal(g.end(),true);assert.equal(g.end(),false);});
+test('horizontal swipes, upwards scrolling, and disallowed starts never refresh',()=>{for(const move of [[200,20],[20,-100]]){const g=createPullGesture();g.start(20,10);g.move(...move);g.move(20,200);assert.equal(g.end(),false);}const g=createPullGesture();g.start(20,10,false);assert.equal(g.move(20,200).capture,false);assert.equal(g.end(),false);});
+test('retracting below threshold and cancelling a touch prevent a reload',()=>{const g=createPullGesture();g.start(0,0);g.move(0,150);g.move(0,30);assert.equal(g.end(),false);g.start(0,0);g.move(0,150);g.cancel();assert.equal(g.end(),false);});
+import {installPullRefresh} from '../pull-refresh.js';
+function harness({standalone=true,online=true,nested=false,dialog=false,busy=false}={}){
+ const handlers={};let reloads=0;class Element{closest(){return false;}}const target=new Element();target.scrollHeight=nested?200:0;target.clientHeight=100;target.parentElement=null;
+ const indicator={hidden:true,classList:{add(){},remove(){},toggle(){}},setAttribute(){}};
+ const doc={documentElement:{classList:{toggle(){}}},body:{append(){}},scrollingElement:{scrollTop:0},createElement(){return indicator;},querySelector(s){return s==='dialog[open]'?dialog:busy;},addEventListener(k,f){handlers[k]=f;}};
+ const win={Element,navigator:{standalone,onLine:online},scrollY:0,matchMedia(){return {matches:false,addEventListener(){}};},getSelection(){return null;},getComputedStyle(){return {overflowY:'auto'};},addEventListener(){},requestAnimationFrame(f){f();},setTimeout(){},location:{reload(){reloads++;}}};
+ installPullRefresh(win,doc);
+ function fire(type,y,touches=1){let prevented=false;handlers[type]({target,touches:Array.from({length:touches},()=>({clientX:10,clientY:y})),cancelable:true,preventDefault(){prevented=true;}});return prevented;}
+ return {win,doc,indicator,fire,reloads:()=>reloads};
+}
+test('standalone gesture reloads once on release, with feedback and without altering the route',()=>{const h=harness();h.fire('touchstart',10);assert.equal(h.fire('touchmove',120),true);assert.match(h.indicator.textContent,/Relâchez/);assert.equal(h.reloads(),0);h.fire('touchend',120,0);assert.equal(h.reloads(),1);assert.match(h.indicator.textContent,/Actualisation/);});
+test('normal browser, nested scrolling, dialogs and page scrolling retain native behavior',()=>{for(const options of [{standalone:false},{nested:true},{dialog:true}]){const h=harness(options);h.fire('touchstart',10);assert.equal(h.fire('touchmove',130),false);h.fire('touchend',130,0);assert.equal(h.reloads(),0);}const h=harness();h.win.scrollY=40;h.fire('touchstart',10);h.fire('touchmove',130);h.fire('touchend',130,0);assert.equal(h.reloads(),0);});
+test('multitouch, offline mode and pending saves do not reload',()=>{for(const options of [{online:false},{busy:true}]){const h=harness(options);h.fire('touchstart',10);h.fire('touchmove',130);h.fire('touchend',130,0);assert.equal(h.reloads(),0);}const h=harness();h.fire('touchstart',10);h.fire('touchmove',130,2);h.fire('touchend',130,0);assert.equal(h.reloads(),0);});
