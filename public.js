@@ -44,6 +44,7 @@ export function publicPage(page) {
  const heading=(label,title,text)=>`<div class="page-head"><div class="eyebrow">${label}</div><h1>${title}</h1><p>${text}</p></div>`;
  if(page==='accueil')return publicHome();
  if(['information','information-stand'].includes(page))return preventionPage(page);
+ if(['surprise','buffet'].includes(page))return `<section class="public-pending" aria-labelledby="pending-title"><article class="info-card"><h1 id="pending-title">${page==='surprise'?'Surprises':'Buffet'}</h1><strong>À déterminer</strong></article></section>`;
  if(['raquettes','bt','tennis'].includes(page))return null;
  if(homeDetails[page]) return heading('LA JOURNÉE',homeDetails[page][0],page==='information'?'Sensibilisation & prévention':'')+`<section class="card"><p>${homeDetails[page][1]}</p>${page==='raquettes'?'<div class="toolbar"><a class="button" href="#bt">Beach tennis</a><a class="button" href="#tennis">Tennis</a></div>':''}</section>`;
  if(['infos','contacts'].includes(page)) return practicalInfo(page);
