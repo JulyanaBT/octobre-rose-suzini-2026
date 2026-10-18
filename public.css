@@ -148,3 +148,21 @@ nav.prevention-tabs{position:static;inset:auto;transform:none;display:grid;grid-
 .prevention-topic summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;list-style:none;background:linear-gradient(90deg,#fff6fbe8,#fff6fbef),url('assets/infos-rubans.png') center/cover}
 .prevention-topic summary::-webkit-details-marker{display:none}.prevention-topic summary strong{display:block;font-size:16px;color:#90234f}.prevention-topic summary small{display:block;font-size:11px;margin-top:3px;color:#735767}.prevention-toggle{font-size:24px;color:#cf1d6c}.prevention-topic[open] .prevention-toggle{transform:rotate(45deg)}
 .prevention-copy{padding:0 16px 12px;font-size:14px;line-height:1.65}.prevention-copy h2{font-size:16px;margin:18px 0 8px;color:#90234f}.prevention-copy p{margin:12px 0}.prevention-copy ul{padding-left:20px}.prevention-copy li{margin:6px 0}.prevention-source{font-size:12px}.prevention-source a{color:#9d1850;text-decoration:underline;text-underline-offset:3px}.prevention-numbers{display:grid;grid-template-columns:1fr 1fr;gap:8px}.prevention-numbers div{background:#fce0eb;border-radius:10px;padding:12px;text-align:center}.prevention-numbers strong{display:block;font-size:23px;color:#a21c4b}.prevention-numbers span{display:block;font-size:12px}.prevention-note{font-size:11px;color:#735767;line-height:1.5;margin:14px 2px}.prevention-stand{text-align:center;padding:32px 16px}.prevention-stand h1{font-size:23px}.prevention-stand>strong{color:#a21c4b}.prevention-stand p{font-size:14px}.prevention summary:focus-visible,.prevention-tabs a:focus-visible{outline:3px solid #a21c4b;outline-offset:-3px}
+/* Keep collapsed prevention topics and partners within a mobile screen. */
+@media(max-width:600px){
+ body:is([data-page="information"],[data-page="information-stand"]){min-height:100svh;display:flex;flex-direction:column}
+ body:is([data-page="information"],[data-page="information-stand"]) main{width:100%;min-height:0;flex:1;margin:0 auto;padding:8px 14px}
+ body:is([data-page="information"],[data-page="information-stand"]) footer{flex-shrink:0;padding:8px 14px max(8px,env(safe-area-inset-bottom));margin-top:auto}
+ .prevention-tabs{margin-bottom:6px!important}.prevention-tabs a{min-height:32px;padding:4px}
+ .prevention-intro{font-size:12px;line-height:1.35;margin:6px 2px 8px}
+ .prevention-topics{gap:6px}.prevention-topic{border-radius:11px}
+ .prevention-topic summary{min-height:48px;padding:8px 12px;gap:8px}
+ .prevention-topic summary strong{font-size:14px;line-height:1.2}.prevention-topic summary small{font-size:10px;line-height:1.25;margin-top:2px}
+ .prevention-toggle{font-size:22px}.prevention-note{font-size:10px;line-height:1.35;margin:8px 2px 0}
+}
+@media(max-width:600px) and (max-height:700px){
+ .prevention-intro{margin:4px 2px 6px}
+ .prevention-intro{font-size:11px}.prevention-topics{gap:4px}
+ .prevention-topic summary{min-height:44px;padding:6px 10px}
+ .prevention-note{font-size:9px;margin-top:6px}
+}
