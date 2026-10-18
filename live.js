@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261018-publicbt';
+import {mountRaquettes} from './raquettes.js?v=20261018-publicmobile';
 import {mountRegistrations} from './club-registrations.js?v=20261018-publicbt';
 import {accessManager,activationPage} from './access.js?v=20261018-publicbt';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-publicbt';
@@ -31,13 +31,13 @@ export function renderLive(page, main) {
       if (current !== generation) return;
 
       if(!open){clearInterval(registrationWatch);main.innerHTML=title('Inscriptions suspendues.')+message('Les inscriptions à la journée sont actuellement suspendues. Merci de revenir plus tard.')+'<a class="button secondary" href="#accueil">Retour à l’accueil</a>';return;}
-      main.innerHTML = title('Une inscription pour la journée.') + `<section class="card registration-card">${!open ? message("Les inscriptions ne sont pas encore ouvertes. Vous pouvez préparer votre nom sportif ci-dessous.") : ''}<p>Les affectations au beach tennis et au tennis seront organisées ensuite par le club. Cette inscription ne réserve pas une place dans un tournoi particulier.</p>
+      main.innerHTML = '<h1 class="registration-title">S’inscrire à la journée</h1>' + `<section class="card registration-card">${!open ? message("Les inscriptions ne sont pas encore ouvertes. Vous pouvez préparer votre nom sportif ci-dessous.") : ''}<p>Choisissez le tennis, le beach tennis ou les deux. Le club organisera les affectations.</p>
       <form id="live-register"><div class="form-grid">
       <label>Prénom<input name="first_name" required maxlength="40" autocomplete="given-name"></label>
       <label>Nom<input name="last_name" required maxlength="60" autocomplete="family-name"></label>
       <label class="full">Surnom (facultatif)<input name="nickname" maxlength="40" autocomplete="nickname" placeholder="Laisser vide pour utiliser le nom proposé"><small id="nickname-preview" aria-live="polite">Sans surnom : prénom + initiale du nom.</small></label>
       <fieldset class="full sport-choices"><legend>Je souhaite participer à</legend><label><input type="checkbox" name="wants_bt"> Beach tennis</label><label><input type="checkbox" name="wants_tennis"> Tennis</label><small>Cochez un sport ou les deux.</small></fieldset><p class="full smalltext">Prévention : informations à venir, sans inscription pour le moment.</p>
-      <p class="full smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Seuls votre nom sportif et votre suivi beach tennis (joueurs, matchs, classement et statistiques) sont visibles publiquement. Vos coordonnées restent réservées aux organisateurs.</p>
+      <details class="full registration-privacy"><summary>Utilisation de vos informations</summary><p class="smalltext">Vos informations sont destinées aux organisateurs du TC Suzini pour préparer votre accueil. Seuls votre nom sportif et votre suivi beach tennis (joueurs, matchs, classement et statistiques) sont visibles publiquement. Vos coordonnées restent réservées aux organisateurs.</p></details>
       <button class="full" ${!open ? 'disabled' : ''}>${open ? 'Envoyer mon inscription' : 'Inscriptions bientôt ouvertes'}</button></div></form><div id="registration-status" role="status" aria-live="polite"></div></section>`;
       const registrationForm = document.querySelector('#live-register');
       registrationForm.addEventListener('input', () => {
