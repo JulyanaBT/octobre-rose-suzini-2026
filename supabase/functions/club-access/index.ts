@@ -55,15 +55,56 @@ Deno.serve(async req => {
  if(!bearer)return reply({error:'Connexion administrateur requise.'},401);
  const {data:userData,error:userError}=await service.auth.getUser(bearer);
  if(userError||!userData.user)return reply({error:'Connexion expirée.'},401);
+ if(body.action==='change_password'){
+  const password=String(body.password||'');
+  if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  const {data:account}=await service.from('club_accounts').select('id').eq('user_id',userData.user.id).eq('enabled',true).not('activated_at','is',null).maybeSingle();
+  if(!account)return reply({error:'Accès Club requis.'},403);
+  const {error:check}=await authClient().auth.signInWithPassword({email:userData.user.email!,password:String(body.current_password||'')});
+  if(check)return reply({error:'Le mot de passe actuel est incorrect.'},400);
+  const {error}=await service.auth.admin.updateUserById(userData.user.id,{password});
+  if(error)return reply({error:'Ce mot de passe ne peut pas être enregistré.'},400);
+  return reply({ok:true});
+ }
  const {data:owner}=await service.from('organizers').select('user_id').eq('user_id',userData.user.id).maybeSingle();
  if(!owner)return reply({error:'Accès réservé à l’administrateur.'},403);
+ if(body.action==='create_password'||body.action==='set_password'){
+  const password=String(body.password||'');
+  const eventId='20261024-0000-4000-8000-000000000001';
+  if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  let account;
+  if(body.action==='create_password'){
+   const username=String(body.username||'').trim().toLowerCase();
+   if(!/^[a-z][a-z0-9_-]{1,29}$/.test(username))return reply({error:'Identifiant invalide.'},400);
+   const {data,error}=await service.from('club_accounts').insert({username,display_name:username,event_ids:[eventId]}).select('*').single();
+   if(error)return reply({error:'Identifiant déjà utilisé. Utilisez le bouton Définir le mot de passe sur le compte existant.'},409);
+   account=data;
+  }else{
+   const {data}=await service.from('club_accounts').select('*').eq('id',body.user_id).maybeSingle();account=data;
+  }
+  if(!account||!account.enabled||account.event_ids.length!==1||account.event_ids[0]!==eventId)return reply({error:'Compte indisponible ou suspendu.'},400);
+  if(account.user_id){
+   const {data:protectedUser}=await service.from('organizers').select('user_id').eq('user_id',account.user_id).maybeSingle();
+   if(protectedUser||account.user_id===userData.user.id)return reply({error:'Compte administrateur protégé.'},403);
+   const {error}=await service.auth.admin.updateUserById(account.user_id,{password,email_confirm:true});
+   if(error)return reply({error:'Mot de passe refusé.'},400);
+   if(!account.activated_at){const {error:activation}=await service.rpc('finish_club_activation',{target_user:account.user_id});if(activation)throw activation;}
+  }else{
+   const hash=await digest(crypto.randomUUID());
+   const {error:pending}=await service.from('club_accounts').update({invitation_hash:hash,invite_expires_at:new Date(Date.now()+3600000).toISOString()}).eq('id',account.id).is('user_id',null);
+   if(pending)throw pending;
+   const {error}=await service.auth.admin.createUser({email:`${account.id}@accounts.invalid`,password,email_confirm:true,app_metadata:{club_invitation_id:account.id,club_invitation_hash:hash}});
+   if(error)return reply({error:'Création impossible. Vérifiez le mot de passe puis réessayez depuis la liste des gestionnaires.'},400);
+  }
+  return reply({user_id:account.id,username:account.username,link:site+'#club'});
+ }
  if(body.action==='list'){
   const {data,error}=await service.from('club_accounts').select('id,user_id,username,display_name,email,enabled,event_ids,activated_at,invite_expires_at,invitation_sent_at').order('created_at');
   if(error)throw new Error('Gestion des accès indisponible.');
   return reply({accounts:data.map(a=>({...a,user_id:a.id}))});
  }
  if(body.action==='mark_sent'){
-  const {error}=await service.from('club_accounts').update({invitation_sent_at:new Date().toISOString()}).eq('id',body.user_id).is('activated_at',null);
+  const {error}=await service.from('club_accounts').update({invitation_sent_at:new Date().toISOString()}).eq('id',body.user_id);
   if(error)throw new Error('Mise à jour impossible.');return reply({ok:true});
  }
  if(body.action==='update'){
