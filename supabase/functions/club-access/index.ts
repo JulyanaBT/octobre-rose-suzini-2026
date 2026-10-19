@@ -15,15 +15,16 @@ Deno.serve(async req => {
  const body=await req.json();
  if(body.action==='login'){
   const username=String(body.username||'').trim().toLowerCase();
-  const {data:account}=await service.from('club_accounts').select('email,enabled,activated_at').eq('username',username).maybeSingle();
+  const {data:account}=await service.from('club_accounts').select('user_id,email,enabled,activated_at').eq('username',username).maybeSingle();
+  const authUser=account?.user_id?(await service.auth.admin.getUserById(account.user_id)).data.user:null;
   const client=authClient();
-  const {data,error}=await client.auth.signInWithPassword({email:account?.email||'unknown-account@invalid.example',password:String(body.password||'')});
+  const {data,error}=await client.auth.signInWithPassword({email:authUser?.email||'unknown-account@invalid.example',password:String(body.password||'')});
   if(error||!account?.enabled||!account.activated_at)return reply({error:'Identifiant ou mot de passe incorrect, ou accès désactivé.'},401);
   return reply({session:data.session});
  }
  if(body.action==='activate'){
   const password=String(body.password||'');
-  if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  if(password.length<6||password.length>128)return reply({error:'Choisissez un mot de passe de 6 à 128 caractères.'},400);
   if(body.type==='club'){
    const token=String(body.token_hash||'');
    const email=String(body.email||'').trim().toLowerCase();
@@ -55,9 +56,21 @@ Deno.serve(async req => {
  if(!bearer)return reply({error:'Connexion administrateur requise.'},401);
  const {data:userData,error:userError}=await service.auth.getUser(bearer);
  if(userError||!userData.user)return reply({error:'Connexion expirée.'},401);
+ if(body.action==='profile'||body.action==='update_profile'){
+  const {data:account}=await service.from('club_accounts').select('id,username,email').eq('user_id',userData.user.id).eq('enabled',true).not('activated_at','is',null).maybeSingle();
+  if(!account)return reply({error:'Ce compte ne dispose pas d’un profil gestionnaire Club.'},403);
+  if(body.action==='profile')return reply({username:account.username,email:account.email?.endsWith('@accounts.invalid')?'':account.email||''});
+  const {error:check}=await authClient().auth.signInWithPassword({email:userData.user.email!,password:String(body.current_password||'')});
+  if(check)return reply({error:'Le mot de passe actuel est incorrect.'},400);
+  const username=String(body.username||'').trim().toLowerCase(),email=String(body.email||'').trim().toLowerCase();
+  if(!/^[a-z][a-z0-9_-]{1,29}$/.test(username)||email.length>150||(email&&!/^\S+@\S+\.\S+$/.test(email)))return reply({error:'Vérifiez l’identifiant et l’e-mail.'},400);
+  const {error}=await service.from('club_accounts').update({username,email:email||null}).eq('id',account.id).eq('enabled',true);
+  if(error)return reply({error:'Cet identifiant ou cet e-mail est déjà utilisé, ou la modification est impossible.'},400);
+  return reply({ok:true,username,email});
+ }
  if(body.action==='change_password'){
   const password=String(body.password||'');
-  if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  if(password.length<6||password.length>128)return reply({error:'Choisissez un mot de passe de 6 à 128 caractères.'},400);
   const {data:account}=await service.from('club_accounts').select('id').eq('user_id',userData.user.id).eq('enabled',true).not('activated_at','is',null).maybeSingle();
   if(!account)return reply({error:'Accès Club requis.'},403);
   const {error:check}=await authClient().auth.signInWithPassword({email:userData.user.email!,password:String(body.current_password||'')});
@@ -71,7 +84,7 @@ Deno.serve(async req => {
  if(body.action==='create_password'||body.action==='set_password'){
   const password=String(body.password||'');
   const eventId='20261024-0000-4000-8000-000000000001';
-  if(password.length<12||password.length>128)return reply({error:'Choisissez un mot de passe de 12 à 128 caractères.'},400);
+  if(password.length<6||password.length>128)return reply({error:'Choisissez un mot de passe de 6 à 128 caractères.'},400);
   let account;
   if(body.action==='create_password'){
    const username=String(body.username||'').trim().toLowerCase();
