@@ -125,3 +125,19 @@ test('public participant list uses only the dedicated anonymous read projection'
  assert.equal(calls[0][1].headers.Authorization,undefined);
  await assert.rejects(backend.registrations('event-test'),/Connectez-vous/);
 });
+test('manager overview requires an authenticated administrator RPC',async()=>{
+ const calls=[];const replies=[response({access_token:'test'}),response([{user_id:'owner'}]),response({accounts:[]})];
+ const api=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();});
+ await api.signIn('owner@example.invalid','test');
+ assert.deepEqual(await api.access({action:'list'}),{accounts:[]});
+ assert.equal(calls.at(-1)[0],config.supabaseUrl+'/rest/v1/rpc/admin_club_accounts');
+ assert.equal(calls.at(-1)[1].headers.Authorization,'Bearer test');
+});
+test('activity recording requires a session and is throttled',async()=>{
+ const calls=[];const replies=[response({access_token:'test'}),response([{user_id:'owner'}]),response(null)];
+ const api=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();});
+ await api.activity();assert.equal(calls.length,0);
+ await api.signIn('owner@example.invalid','test');await api.activity();await api.activity();
+ assert.equal(calls.length,3);assert.equal(calls.at(-1)[0],config.supabaseUrl+'/rest/v1/rpc/record_club_activity');
+ assert.equal(calls.at(-1)[1].headers.Authorization,'Bearer test');
+});
