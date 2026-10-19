@@ -116,3 +116,12 @@ test('public sports read needs no session and calls only the public projection',
  assert.equal(call.options.headers.Authorization,undefined);
  assert.deepEqual(JSON.parse(call.options.body),{p_event:'event-demo'});
 });
+test('public participant list uses only the dedicated anonymous read projection', async()=>{
+ const calls=[]; const rows=[{nickname:'Cam',wants_bt:true,wants_tennis:true}];
+ const backend=createBackend(config,async(...args)=>{calls.push(args);return response(rows);});
+ assert.deepEqual(await backend.publicParticipants('event-test'),rows);
+ assert.equal(calls[0][0],config.supabaseUrl+'/rest/v1/rpc/public_participants');
+ assert.deepEqual(JSON.parse(calls[0][1].body),{p_event:'event-test'});
+ assert.equal(calls[0][1].headers.Authorization,undefined);
+ await assert.rejects(backend.registrations('event-test'),/Connectez-vous/);
+});
