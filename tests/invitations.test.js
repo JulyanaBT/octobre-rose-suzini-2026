@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 const source=stripTypeScriptTypes((await readFile(new URL('../supabase/functions/club-access/index.ts',import.meta.url),'utf8')).replace(/^import .*\n/,''));
 function harness(results){
  const calls=[];let handler;
- const service={from(table){const steps=[];const q={then(resolve,reject){calls.push({table,steps});return Promise.resolve(results.shift()).then(resolve,reject);}};for(const op of ['select','eq','is','order','in','insert','update','single','maybeSingle'])q[op]=(...args)=>{steps.push([op,...args]);return q;};return q;},auth:{getUser:async()=>({data:{user:{id:'owner'}}}),admin:{createUser:async data=>{calls.push({createUser:data});return results.shift();}}}};
+ const service={from(table){const steps=[];const q={then(resolve,reject){calls.push({table,steps});return Promise.resolve(results.shift()).then(resolve,reject);}};for(const op of ['select','eq','is','order','in','insert','update','single','maybeSingle','not'])q[op]=(...args)=>{steps.push([op,...args]);return q;};return q;},auth:{getUser:async()=>({data:{user:{id:'owner'}}}),admin:{createUser:async data=>{calls.push({createUser:data});return results.shift();}}}};
  vm.runInNewContext(source,{createClient:()=>service,Deno:{env:{get:()=>''},serve:h=>handler=h},crypto,TextEncoder,Response,Date,Set,Uint8Array,JSON,encodeURIComponent});
  return {calls,run:body=>handler(new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer test','Content-Type':'application/json'},body:JSON.stringify(body)}))};
 }
@@ -36,4 +36,13 @@ test('direct creation requires administrator and never accepts caller event scop
 test('password reset rejects suspended and protected administrator accounts',async()=>{
  const suspended=harness([{data:{user_id:'owner'}},{data:{id:'account',enabled:false,event_ids:[october]}}]);assert.equal((await suspended.run({action:'set_password',user_id:'account',password:'test-only-password'})).status,400);
  const protectedAccount=harness([{data:{user_id:'owner'}},{data:{id:'account',enabled:true,user_id:'admin2',event_ids:[october]}},{data:{user_id:'admin2'}}]);assert.equal((await protectedAccount.run({action:'set_password',user_id:'account',password:'test-only-password'})).status,403);
+});
+
+test('six-character initial password is accepted and five is rejected',async()=>{
+ const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{error:null},{error:null}]);assert.equal((await h.run({action:'create_password',username:'maite',password:'abc123'})).status,200);
+ const short=harness([{data:{user_id:'owner'}}]);assert.equal((await short.run({action:'create_password',username:'maite',password:'abc12'})).status,400);
+});
+test('own profile reads are bound to the authenticated user',async()=>{
+ const h=harness([{data:{id:'own',username:'maite',email:'own@accounts.invalid'}}]);const r=await h.run({action:'profile',user_id:'other'});assert.equal(r.status,200);assert.deepEqual(await r.json(),{username:'maite',email:''});assert.equal(h.calls[0].steps.some(s=>s[0]==='eq'&&s[1]==='user_id'&&s[2]==='owner'),true);
+ const denied=harness([{data:null}]);assert.equal((await denied.run({action:'profile'})).status,403);
 });
