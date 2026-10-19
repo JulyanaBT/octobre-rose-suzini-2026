@@ -1,7 +1,7 @@
 import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
-import {accessManager,activationPage} from './access.js?v=20261019-adminactions';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-adminactions';
+import {accessManager,activationPage,passwordDialog} from './access.js?v=20261019-simplelogin';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-simplelogin';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -102,11 +102,12 @@ export function renderLive(page, main) {
     const event = events.find(e=>e.id===eventId);
     if (current !== generation || listRequest !== listVersion) return;
     main.innerHTML = (events.length>1 ? `<details class="club-event-picker"><summary>Changer d’événement</summary><label>Événement<select id="event-select">${events.map(e=>`<option value="${esc(e.id)}" ${e.id===eventId?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label></details>` : '') + subnav + `${inscriptionsPage ? '<section id="club-registration-manager"></section>' : (!events.length ? message("Aucun événement ne vous est attribué pour le moment.") : page === 'club-raquettes' ? '<section id="club-raquettes-manager"></section>' : page === 'club-infos' ? '' : `<section class="card club-placeholder"><h2>${({'club-convivialite':'Surprises','club-surprise':'Surprises','club-information':'Prévention','club-buffet':'Buffet'})[page]||'Gestion de cette activité'}</h2><strong>À déterminer</strong></section>`)}<p id="admin-status" role="status"></p>${event && page === 'club-infos' ? `<section class="card"><h2>Informations de l’événement</h2><form id="event-form"><label>Titre<input name="new_title" required maxlength="120" value="${esc(event.title)}"></label><label>Lieu<input name="new_location" maxlength="200" value="${esc(event.location)}"></label><label>Date<input name="new_date" type="date" required value="${esc(event.event_date)}"></label><button>Enregistrer</button></form></section>` : ''}${adminPage && event ? `<section class="card"><h2>Attribuer un accès Club</h2><p>Le compte doit d’abord être créé et confirmé dans Supabase. L’accès concerne uniquement l’événement sélectionné.</p><form id="access-form"><label>E-mail du compte<input type="email" name="target_email" required></label><label>Action<select name="allow_access"><option value="true">Autoriser cet événement</option><option value="false">Retirer cet événement</option></select></label><button>Appliquer</button></form></section>` : ''}`;
-    main.insertAdjacentHTML('beforeend','<div class="organizer-logout"><button id="logout" class="secondary">Se déconnecter</button></div>');
+    main.insertAdjacentHTML('beforeend','<div class="organizer-logout"><button id="change-password" class="secondary">Changer mon mot de passe</button><button id="logout" class="secondary">Se déconnecter</button></div>');
     if(page==='club-raquettes' && eventId)mountRaquettes(document.querySelector('#club-raquettes-manager'),backend,eventId,()=>current===generation && listRequest===listVersion);
     if(inscriptionsPage && eventId)mountRegistrations(document.querySelector('#club-registration-manager'),backend,eventId,rows,()=>current===generation && listRequest===listVersion,{view:playersPage?'players':'registrations'});
     if(document.querySelector('#event-select'))document.querySelector('#event-select').onchange=()=>list().catch(error=>document.querySelector('#admin-status').textContent=error.message);
     for(const [selector,action] of [['#event-form',backend.updateEvent],['#access-form',backend.setClubAccess]]) { const form=document.querySelector(selector); if(form)form.onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(form));data.target_event=eventId;if('allow_access' in data)data.allow_access=data.allow_access==='true';const button=form.querySelector('button');button.disabled=true;try{await action(data);document.querySelector('#admin-status').textContent='Modification enregistrée.';}catch(error){document.querySelector('#admin-status').textContent=error.message;}finally{button.disabled=false;}}; }
+    document.querySelector('#change-password').onclick=()=>passwordDialog(backend,main);
     document.querySelector('#logout').onclick = async () => {
       signedIn = false; main.innerHTML = title('Déconnexion…');
       try { await backend.signOut(); } catch {} finally { if (current === generation) renderLive(page, main); }
