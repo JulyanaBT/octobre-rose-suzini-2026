@@ -75,7 +75,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       const oldToken=token;clear();
       if(oldToken)await fetcher(config.supabaseUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${oldToken}`},signal:AbortSignal.timeout(15000)});
     },
-    access: data => data.action==='list' ? request('/rest/v1/rpc/admin_club_accounts',{body:{},authorized:true}) : request('/functions/v1/club-access',{body:data,authorized:true}),
+    access: data => data.action==='delete' ? request('/rest/v1/rpc/delete_club_manager',{body:{p_account:data.user_id},authorized:true}) : data.action==='list' ? request('/rest/v1/rpc/admin_club_accounts',{body:{},authorized:true}) : request('/functions/v1/club-access',{body:data,authorized:true}),
     activate: data => request('/functions/v1/club-access',{body:{...data,action:'activate'}}),
     publicParticipants: eventId => request('/rest/v1/rpc/public_participants',{body:{p_event:eventId}}),
     publicBeach: eventId => request('/rest/v1/rpc/public_bt',{body:{p_event:eventId}}),
