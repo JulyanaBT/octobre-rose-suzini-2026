@@ -262,3 +262,9 @@ body[data-space="club"] header nav{grid-template-columns:repeat(5,minmax(0,1fr))
 [data-view="registrations"] :is(.club-filters,.club-counts,.club-person-actions,.player-status,.club-person>small){display:none}
 [data-view="registrations"] .club-status-tabs{grid-template-columns:1fr}
 [data-view="players"] :is(.registration-control,#club-add,[data-edit],.club-person-email){display:none}
+
+body[data-space="admin"] header nav{grid-template-columns:repeat(2,minmax(0,1fr));max-width:520px}
+.admin-access-view{max-width:900px;margin:auto}.admin-access-view h1{font-size:24px;margin:0 0 12px}
+[data-admin-view="accounts"] .admin-invite,[data-admin-view="invite"] .admin-accounts{display:none}
+.manager-details{margin:12px 0}.manager-details>div{display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px;margin:8px 0}.manager-details dt{font-weight:700;font-size:12px}.manager-details dd{margin:0;overflow-wrap:anywhere;font-size:13px}
+@media(max-width:600px){.manager-details>div{grid-template-columns:1fr;gap:3px}}
