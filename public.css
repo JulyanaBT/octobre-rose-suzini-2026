@@ -253,3 +253,12 @@ body[data-space="club"] .organizer-logout{padding-top:24px;padding-bottom:4px}
 .participant-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#fff7fb;border:1px solid #edc5d8;border-radius:10px}
 .participant-row strong{overflow-wrap:anywhere;font-size:14px}.participant-row span{font-size:11px;color:#813852;text-align:right}
 @media(max-width:600px){body[data-space="public"] header nav{gap:2px;padding-left:4px;padding-right:4px}body[data-space="public"] header nav a{min-width:0;padding-left:1px;padding-right:1px;font-size:9px;letter-spacing:-.15px}.conviviality .public-pending{margin-top:8px}}
+
+/* Organizer participants: registration records and day-of player management. */
+body[data-space="club"] header nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+.club-subnav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:4px;background:#171218;padding:4px;border:0;border-radius:10px;box-shadow:none;margin:0 0 10px}
+.club-subnav a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:7px;color:#ff4d9d;font-size:13px;border:0;border-radius:7px}
+.club-subnav a.active{background:#ff4d9d;color:#171218;font-weight:750}
+[data-view="registrations"] :is(.club-filters,.club-counts,.club-person-actions,.player-status,.club-person>small){display:none}
+[data-view="registrations"] .club-status-tabs{grid-template-columns:1fr}
+[data-view="players"] :is(.registration-control,#club-add,[data-edit],.club-person-email){display:none}
