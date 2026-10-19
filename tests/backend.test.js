@@ -141,3 +141,11 @@ test('activity recording requires a session and is throttled',async()=>{
  assert.equal(calls.length,3);assert.equal(calls.at(-1)[0],config.supabaseUrl+'/rest/v1/rpc/record_club_activity');
  assert.equal(calls.at(-1)[1].headers.Authorization,'Bearer test');
 });
+test('manager deletion requires auth and sends only account id to the protected RPC',async()=>{
+ const calls=[];const replies=[response({access_token:'test'}),response([{user_id:'owner'}]),response(null)];
+ const api=createBackend(config,async(...args)=>{calls.push(args);return replies.shift();});
+ await assert.rejects(api.access({action:'delete',user_id:'fixture'}),/Connectez-vous/);
+ await api.signIn('owner@example.invalid','test');await api.access({action:'delete',user_id:'fixture'});
+ assert.equal(calls.at(-1)[0],config.supabaseUrl+'/rest/v1/rpc/delete_club_manager');
+ assert.deepEqual(JSON.parse(calls.at(-1)[1].body),{p_account:'fixture'});
+});
