@@ -1,7 +1,7 @@
 import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
-import {accessManager,activationPage,passwordDialog} from './access.js?v=20261019-simplelogin';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-simplelogin';
+import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -90,6 +90,7 @@ export function renderLive(page, main) {
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
     backend.activity().catch(()=>{});
+    if(page==='club-compte'){await accountPage(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     const events = await backend.events();
     const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
     const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
