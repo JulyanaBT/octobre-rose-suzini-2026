@@ -49,7 +49,10 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     if(!row?.id)throw new Error('La réponse n’a pas pu être confirmée. Actualisez la liste avant de réessayer.');
     return row;
   }
+  let lastActivity=0;
+  async function activity(){if(!token||!role||Date.now()-lastActivity<60000)return;lastActivity=Date.now();try{await request('/rest/v1/rpc/record_club_activity',{body:{},authorized:true});}catch(error){lastActivity=0;throw error;}}
   return {
+    activity,
     async settings() {
       const rows = await request('/rest/v1/events?select=registration_open&id=eq.20261024-0000-4000-8000-000000000001');
       return {open: rows?.[0]?.registration_open === true};
@@ -72,7 +75,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       const oldToken=token;clear();
       if(oldToken)await fetcher(config.supabaseUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${oldToken}`},signal:AbortSignal.timeout(15000)});
     },
-    access: data => request('/functions/v1/club-access',{body:data,authorized:true}),
+    access: data => data.action==='list' ? request('/rest/v1/rpc/admin_club_accounts',{body:{},authorized:true}) : request('/functions/v1/club-access',{body:data,authorized:true}),
     activate: data => request('/functions/v1/club-access',{body:{...data,action:'activate'}}),
     publicParticipants: eventId => request('/rest/v1/rpc/public_participants',{body:{p_event:eventId}}),
     publicBeach: eventId => request('/rest/v1/rpc/public_bt',{body:{p_event:eventId}}),
