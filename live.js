@@ -1,7 +1,7 @@
 import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
-import {accessManager,activationPage} from './access.js?v=20261018-publicbt';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-participants';
+import {accessManager,activationPage} from './access.js?v=20261019-adminsimple';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-adminsimple';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -76,7 +76,7 @@ export function renderLive(page, main) {
   }
   if(['raquettes','bt','tennis'].includes(page)){main.innerHTML='<section id="public-raquettes"></section>';mountRaquettes(main.querySelector('#public-raquettes'),backend,'20261024-0000-4000-8000-000000000001',()=>current===generation,{readOnly:true,initialSport:page==='tennis'?'tennis':'bt'});return true;}
   const clubPage = page === 'club' || page.startsWith('club-');
-  if (!['organisation','admin','club'].includes(page) && !clubPage) {
+  if (!['organisation','admin','club'].includes(page) && !clubPage && !page.startsWith('admin-')) {
     main.innerHTML = title(page === 'tennis' ? 'Le TMC tennis se prépare.' : 'L’Americano beach tennis.') + message('Les matchs et le classement seront disponibles lorsque l’organisation sportive sera prête.');
     return true;
   }
@@ -89,6 +89,7 @@ export function renderLive(page, main) {
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
+    backend.activity().catch(()=>{});
     const events = await backend.events();
     const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
     const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
@@ -130,3 +131,5 @@ export function renderLive(page, main) {
   };
   return true;
 }
+
+for(const type of ['pointerdown','keydown'])document.addEventListener(type,()=>{if(document.body.dataset.space==='club')backend?.activity().catch(()=>{});},{passive:true});
