@@ -1,7 +1,7 @@
 import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
-import {accessManager,activationPage} from './access.js?v=20261019-adminsimple';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-adminsimple';
+import {accessManager,activationPage} from './access.js?v=20261019-adminactions';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-adminactions';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
