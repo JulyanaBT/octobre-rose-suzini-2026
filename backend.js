@@ -74,6 +74,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     },
     access: data => request('/functions/v1/club-access',{body:data,authorized:true}),
     activate: data => request('/functions/v1/club-access',{body:{...data,action:'activate'}}),
+    publicParticipants: eventId => request('/rest/v1/rpc/public_participants',{body:{p_event:eventId}}),
     publicBeach: eventId => request('/rest/v1/rpc/public_bt',{body:{p_event:eventId}}),
     beach: data => request('/rest/v1/rpc/club_bt',{body:data,authorized:true}),
     role: () => role,
