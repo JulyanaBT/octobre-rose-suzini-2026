@@ -1,7 +1,7 @@
 import {mountRaquettes} from './raquettes.js?v=20261018-refine';
 import {mountRegistrations} from './club-registrations.js?v=20261018-publicbt';
 import {accessManager,activationPage} from './access.js?v=20261018-publicbt';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261018-publicbt';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-participants';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -19,6 +19,17 @@ export function renderLive(page, main) {
   document.querySelector('.preview').textContent = 'TC SUZINI · OCTOBRE ROSE 2026';
   if (['accueil','programme'].includes(page)) return false;
   if (setupError) { main.innerHTML = title('Les inscriptions se préparent.') + message(setupError); return true; }
+  if(page==='participants'){
+    let rows=[],filter='all',loading=true,failed=false;
+    const draw=()=>{
+      if(current!==generation)return;
+      const filtered=rows.filter(p=>filter==='all'||(filter==='bt'?p.wants_bt:p.wants_tennis));
+      main.innerHTML=`<section class="public-participants"><nav class="participant-filters" aria-label="Filtrer les participants">${[['all','Tous'],['bt','Beach tennis'],['tennis','Tennis']].map(([value,label])=>`<button type="button" data-participant-filter="${value}" aria-pressed="${filter===value}">${label}</button>`).join('')}</nav><p class="participant-count" role="status">${loading?'Chargement des participants…':failed?'La liste est momentanément indisponible. Rechargez la page pour réessayer.':`${filtered.length} participant${filtered.length===1?'':'s'}${filter==='all'?'':` · ${rows.length} inscrits au total`}`}</p><div class="participant-list">${loading||failed?'':filtered.map(p=>`<article class="participant-row"><strong>${esc(p.nickname)}</strong><span>${[p.wants_bt?'Beach tennis':'',p.wants_tennis?'Tennis':''].filter(Boolean).join(' · ')||'Participation à la journée'}</span></article>`).join('')||'<p class="info-card">Aucun participant dans cette catégorie pour le moment.</p>'}</div></section>`;
+      main.querySelectorAll('[data-participant-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.participantFilter;draw();}));
+    };
+    draw();backend.publicParticipants('20261024-0000-4000-8000-000000000001').then(data=>{rows=data;rows.sort((a,b)=>a.nickname.localeCompare(b.nickname,'fr',{sensitivity:'base',numeric:true}));}).catch(()=>{failed=true;}).finally(()=>{loading=false;draw();});
+    return true;
+  }
   if(page.startsWith('activation')){activationPage(backend,main,page,()=>current===generation);return true;}
   if (page === 'inscription') {
     clearInterval(registrationWatch);
