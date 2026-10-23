@@ -27,7 +27,7 @@ export function installPullRefresh(win=window,doc=document){
  const show=(text,ready=false)=>{indicator.textContent=text;indicator.hidden=false;indicator.classList.toggle('ready',ready);};
  function excluded(target){
   if(!(target instanceof win.Element)||target.closest('input,textarea,select,button,a,[contenteditable],dialog,[role="dialog"]')||doc.querySelector('dialog[open]')||win.getSelection()?.type==='Range')return true;
-  for(let el=target;el&&el!==doc.body&&el!==doc.documentElement;el=el.parentElement){if(el.scrollHeight>el.clientHeight+1&&/(auto|scroll)/.test(win.getComputedStyle(el).overflowY))return true;}
+  for(let el=target;el&&el!==doc.body&&el!==doc.documentElement;el=el.parentElement){if(el.scrollHeight>el.clientHeight+1&&/(auto|scroll)/.test(win.getComputedStyle(el).overflowY)){const publicScroller=doc.body.dataset.space==='public'&&(el.matches('main')||el.matches('.participant-list'));if(!publicScroller||el.scrollTop>1)return true;}}
   return false;
  }
  doc.addEventListener('touchstart',event=>{
