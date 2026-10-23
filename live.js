@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261023-ranking';
+import {mountRaquettes} from './raquettes.js?v=20261023-compactlang';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
@@ -91,7 +91,14 @@ export function renderLive(page, main) {
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
     backend.activity().catch(()=>{});
-    if(['club-compte','club-parametres'].includes(page)){await accountPage(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});if(current===generation)main.insertAdjacentHTML('afterbegin',settingsNav(false));return;}
+    main.style.setProperty('--club-header-height',`${document.querySelector('header')?.getBoundingClientRect().height||120}px`);
+    if(['club-compte','club-parametres'].includes(page)){
+      main.innerHTML=settingsNav(false)+'<section id="club-account-content"><p>Chargement du compte…</p></section>';
+      const accountRoot=main.querySelector('#club-account-content');
+      try{await accountPage(backend,accountRoot,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});}
+      catch(e){if(current===generation)accountRoot.innerHTML=message(e.message);}
+      return;
+    }
     const events = await backend.events();
     const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
     const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
