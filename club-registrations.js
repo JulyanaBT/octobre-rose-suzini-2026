@@ -15,8 +15,10 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
  const paintOpening=()=>{if(!isCurrent())return;$('#club-opening-state').textContent=opening.open?'Ouvertes · formulaire public accessible':'Suspendues · formulaire public masqué';$('#club-opening-toggle').textContent=opening.open?'Suspendre':'Ouvrir';$('#club-opening-toggle').disabled=openingBusy;};
  if(!playersView)backend.registrationSettings(eventId).then(value=>{opening=value;paintOpening();}).catch(error=>{if(isCurrent())$('#club-opening-state').textContent=error.message;});
  $('#club-opening-toggle').onclick=async()=>{if(!isCurrent()||!opening||openingBusy)return;openingBusy=true;paintOpening();try{opening=await backend.setRegistrationOpen({p_event:eventId,p_open:!opening.open,p_version:opening.version});status(opening.open?'Les inscriptions publiques sont ouvertes.':'Les inscriptions publiques sont suspendues.');}catch(error){status(error.message);}finally{openingBusy=false;paintOpening();}};
- $('#club-status-tabs').onclick=e=>{const button=e.target.closest('[data-category]');if(!button)return;$('#club-presence-filter').value=button.dataset.category;$('#club-search').value='';draw();};
- $('#club-activity-tabs').onclick=e=>{const button=e.target.closest('[data-scope]');if(!button)return;scope=button.dataset.scope;$('#club-presence-filter').value='all';draw();};
+ $('#club-status-tabs').onclick=e=>{const button=e.target.closest('[data-category]');if(!button)return;$('#club-presence-filter').value=button.dataset.category;$('#club-search').value='';draw();refresh();};
+ $('#club-activity-tabs').onclick=e=>{const button=e.target.closest('[data-scope]');if(!button)return;scope=button.dataset.scope;$('#club-presence-filter').value='all';draw();refresh();};
+ let refreshTicket=0;
+ async function refresh(){const ticket=++refreshTicket;if(busy.size||$('#club-person-dialog').open)return;try{const fresh=await backend.registrations(eventId);if(!isCurrent()||ticket!==refreshTicket||busy.size||$('#club-person-dialog').open)return;rows=fresh;draw();}catch(e){status(e.message);}}
  const update = row => {const index=rows.findIndex(r=>r.id===row.id);if(index<0) rows.unshift(row);else rows[index]=row;draw();};
  function draw() {
   if(!isCurrent())return;
@@ -26,14 +28,16 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
   const pool=rows.filter(belongs);
   $('#club-status-tabs').innerHTML=(playersView?[['all','Tous',pool.length],['present','Actifs',pool.filter(active).length],['absent','Inactifs',pool.filter(r=>!active(r)).length]]:[['all','Inscrits',rows.length]]).map(([value,label,count])=>`<button type="button" data-category="${value}" aria-pressed="${presence===value}"><b>${count}</b><span>${label}</span></button>`).join('');
   $('#club-counts').innerHTML=`<span>Actifs par activité :</span>${Object.entries(activities).map(([v,n])=>`<span><b>${rows.filter(r=>r.present&&r.activity===v).length}</b> ${n}</span>`).join('')}`;
-  $('#club-people').innerHTML=filtered.length?filtered.map(r=>playersView?`<article class="club-player-row"><strong>${esc(r.nickname)}</strong><button data-presence="${esc(r.id)}" aria-pressed="${!!active(r)}" ${busy.has(r.id)?'disabled':''}>${active(r)?'Actif':'Inactif'}</button><button class="club-assignment" data-assign="${esc(r.id)}" data-activity-color="${r.present?r.activity:'inactive'}" ${busy.has(r.id)?'disabled':''}>${r.present?activities[r.activity]||'À préciser':'Absent'}</button></article>`:`<article class="club-person ${r.present?'is-present':''}" data-id="${esc(r.id)}"><div class="club-person-heading"><div><h2>${esc(r.nickname)}</h2><p>${esc(r.first_name)} ${esc(r.last_name)}</p><span class="player-status">${r.present?'Actif':'Inactif'}</span></div><button type="button" class="secondary" data-edit="${esc(r.id)}" ${busy.has(r.id)?'disabled':''}>Modifier</button></div>${r.email?`<p class="club-person-email">${esc(r.email)}</p>`:''}<p class="club-sports"><strong>Inscription :</strong> ${r.wants_bt&&r.wants_tennis?'Beach tennis + Tennis':r.wants_bt?'Beach tennis':r.wants_tennis?'Tennis':'Choix à préciser'}</p><div class="club-person-actions"><button type="button" data-presence="${esc(r.id)}" aria-pressed="${r.present}" ${busy.has(r.id)?'disabled':''}>${r.present?'Désactiver':'Activer'}</button><label>Activité actuelle<select data-activity="${esc(r.id)}" ${!r.present||busy.has(r.id)?'disabled':''}>${Object.entries(activities).map(([v,n])=>`<option value="${v}" ${r.activity===v?'selected':''}>${n}</option>`).join('')}</select></label></div>${!r.present?'<small>Activez le joueur à son arrivée pour affecter une activité.</small>':''}</article>`).join(''):`<p class="empty">${rows.length?'Aucun inscrit ne correspond aux filtres.':'Aucun inscrit pour le moment.'}</p>`;
+  const listScroll=$('#club-people').scrollTop;
+  $('#club-people').innerHTML=filtered.length?filtered.map(r=>playersView?`<article class="club-player-row"><strong>${esc(r.nickname)}</strong><button data-presence="${esc(r.id)}" aria-pressed="${!!active(r)}" ${busy.has(r.id)?'disabled':''}>${active(r)?'Actif':'Inactif'}</button><button class="club-assignment" data-assign="${esc(r.id)}" data-activity-color="${r.present?r.activity:'inactive'}" ${busy.has(r.id)?'disabled':''}>${r.present?activities[r.activity]||'À préciser':'Absent'}</button></article>`:`<article class="club-registration-row"><div class="registration-line"><strong>${esc(r.nickname)}</strong><span class="registration-current" data-activity-color="${r.present?r.activity:'inactive'}">${r.present?activities[r.activity]||'À préciser':'Inactif'}</span><span class="registration-sport tennis ${r.wants_tennis?'':'not-selected'}">${r.wants_tennis?'Tennis':'—'}</span><span class="registration-sport beach ${r.wants_bt?'':'not-selected'}">${r.wants_bt?'BT':'—'}</span></div><div class="registration-identity"><span>${esc(r.first_name)} ${esc(r.last_name)}</span><button type="button" class="secondary" data-edit="${esc(r.id)}" ${busy.has(r.id)?'disabled':''}>Modifier</button></div></article>`).join(''):`<p class="empty">${rows.length?'Aucun inscrit ne correspond aux filtres.':'Aucun inscrit pour le moment.'}</p>`;
+  $('#club-people').scrollTop=listScroll;
  }
  async function participation(row,present,activity) {
   if(!isCurrent()||busy.has(row.id))return;
-  busy.add(row.id);draw();status('Enregistrement…');
+  refreshTicket++;busy.add(row.id);draw();status('Enregistrement…');
   try { const saved=await backend.setParticipation({p_event:eventId,p_id:row.id,p_version:row.version,p_present:present,p_activity:activity});if(isCurrent()){update(saved);status(present?`${saved.nickname} : statut actif et activité enregistrés.`:`${saved.nickname} désactivé et retiré de son activité.`);return true;} }
   catch(error){status(error.message);}
-  finally{busy.delete(row.id);draw();}
+  finally{busy.delete(row.id);draw();if(!$('#club-person-dialog').open)refresh();}
  }
  function chooseActivity(row,leaving=false) {
   if(!row||!isCurrent()||busy.has(row.id))return;
@@ -41,7 +45,7 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
   dialog.innerHTML=`<h2 id="club-person-title">${esc(row.nickname)}</h2><p>${leaving?'Choisir une autre activité ou signaler son départ.':'Choisir son activité.'}</p><div class="club-assignment-options">${Object.entries(activities).filter(([v])=>!leaving||scope==='all'||v!==scope).map(([v,n])=>`<button type="button" data-choice="${v}" data-activity-color="${v}">${n}</button>`).join('')}<button type="button" data-choice="inactive">Inactif · départ</button></div><p role="status" id="assignment-error"></p><button type="button" class="secondary" id="assignment-cancel">Annuler</button>`;
   dialog.oncancel=e=>{if(saving)e.preventDefault();};
   dialog.querySelector('#assignment-cancel').onclick=()=>dialog.close();
-  dialog.querySelectorAll('[data-choice]').forEach(button=>button.onclick=async()=>{if(saving)return;saving=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);const choice=button.dataset.choice;const saved=await participation(row,choice!=='inactive',choice==='inactive'?'welcome':choice);if(!isCurrent())return;if(saved)dialog.close();else dialog.querySelector('#assignment-error').textContent=$('#club-registration-status').textContent;saving=false;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);});
+  dialog.querySelectorAll('[data-choice]').forEach(button=>button.onclick=async()=>{if(saving)return;saving=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);const choice=button.dataset.choice;const saved=await participation(row,choice!=='inactive',choice==='inactive'?'welcome':choice);if(!isCurrent())return;if(saved){dialog.close();refresh();}else dialog.querySelector('#assignment-error').textContent=$('#club-registration-status').textContent;saving=false;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);});
   dialog.showModal();
  }
  function edit(row) {
@@ -62,7 +66,7 @@ export function mountRegistrations(root, backend, eventId, initialRows, isCurren
    try{
     let saved;
     await registerWithNickname(async values=>{saved=await backend.saveRegistration({p_event:eventId,p_id:id,p_version:version,p_first_name:values.first_name,p_last_name:values.last_name,p_nickname:values.nickname,p_email:values.email,p_wants_bt:values.wants_bt,p_wants_tennis:values.wants_tennis});return saved.id;},data);
-    if(isCurrent()){update(saved);dialog.close();status(`${saved.nickname} : ${row?'fiche modifiée':'inscription ajoutée'}.`);}
+    if(isCurrent()){update(saved);dialog.close();refresh();status(`${saved.nickname} : ${row?'fiche modifiée':'inscription ajoutée'}.`);}
    }catch(error){if(isCurrent())dialog.querySelector('#club-save-status').textContent=error.message;}
    finally{saving=false;if(isCurrent())form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}
   };
