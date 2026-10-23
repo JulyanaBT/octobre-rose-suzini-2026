@@ -12,6 +12,7 @@ do $$ declare s jsonb;r jsonb;roster text[];e uuid:='00000000-0000-4000-8000-000
  r:=jsonb_build_array(jsonb_build_object('teamA',roster[1:2],'teamB',roster[3:4],'bench',roster[9:9]),jsonb_build_object('teamA',roster[5:6],'teamB',roster[7:8],'bench',roster[9:9]));
  s:=public.club_bt(e,'round',0,r);
  if jsonb_array_length(s->'matches')<>2 or (s->>'version')::int<>1 then raise exception 'FAIL round';end if;
+ if s->'matches'->0->>'court'<>'🐝 Manon Queen Bee' or s->'matches'->1->>'court'<>'🌶️ Lisa de los pimentos' then raise exception 'FAIL court names';end if;
  blocked:=false;begin perform public.club_bt(e,'round',0,r);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL stale version';end if;
  blocked:=false;begin perform public.club_bt(e,'round',1,r);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL pending';end if;
  blocked:=false;begin perform public.club_set_participation(e,roster[1]::uuid,0,true,'tennis');exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL assignment guard';end if;
