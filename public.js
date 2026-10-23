@@ -102,7 +102,7 @@ document.addEventListener('toggle', event => {
    section.style.removeProperty('padding-bottom');
    preventionScrollFrame = requestAnimationFrame(() => {
     if (!section.isConnected || section.querySelector('.prevention-topic[open]')) return;
-    window.scrollTo({top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+    (document.body.dataset.space==='public'?document.querySelector('main'):window).scrollTo({top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
    });
   }
   return;
@@ -114,13 +114,12 @@ document.addEventListener('toggle', event => {
  preventionScrollFrame = requestAnimationFrame(() => {
   if (!opened.isConnected || !opened.open) return;
   section.style.removeProperty('padding-bottom');
-  const headerHeight = document.querySelector('header')?.getBoundingClientRect().height || 0;
+  const scroller = document.body.dataset.space==='public' ? document.querySelector('main') : document.documentElement;
   const tabsHeight = (section.querySelector('.prevention-tabs') || section.closest('#public-raquettes')?.querySelector('.racket-nav'))?.getBoundingClientRect().height || 0;
-  const top = Math.max(0, window.scrollY + opened.getBoundingClientRect().top - headerHeight - tabsHeight - 8);
-  // Short topics near the bottom also need enough space to reach the header.
-  const available = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const top = Math.max(0, scroller.scrollTop + opened.getBoundingClientRect().top - scroller.getBoundingClientRect().top - tabsHeight - 8);
+  const available = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
   if (top > available) section.style.paddingBottom = `${Math.ceil(top - available)}px`;
-  window.scrollTo({top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+  scroller.scrollTo({top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
  });
 }, true);
 
