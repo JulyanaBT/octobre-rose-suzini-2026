@@ -1,0 +1,35 @@
+begin;
+insert into public.events(id,title) values('00000000-0000-4000-8000-000000000010','TEST BT');
+insert into auth.users(id,email,email_confirmed_at) values('00000000-0000-4000-8000-000000000010','bt-test@example.invalid',now());
+insert into public.event_memberships(user_id,event_id) values('00000000-0000-4000-8000-000000000010','00000000-0000-4000-8000-000000000010');
+insert into public.registrations(id,event_id,first_name,last_name,nickname,present,activity,wants_bt,wants_tennis)
+select ('00000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'00000000-0000-4000-8000-000000000010','Test','BT','TEST-BT-010-'||i,true,'bt',true,false from generate_series(101,109) i;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000010',true);
+do $$ declare s jsonb;r jsonb;roster text[];e uuid:='00000000-0000-4000-8000-000000000010';blocked boolean;target text;begin
+ select array_agg(id::text order by id) into roster from public.registrations where event_id=e;
+ r:=jsonb_build_array(jsonb_build_object('teamA',roster[1:2],'teamB',roster[3:4],'bench',roster[9:9]),jsonb_build_object('teamA',roster[5:6],'teamB',roster[7:8],'bench',roster[9:9]));
+ s:=public.club_bt(e,'round',0,r);
+ blocked:=false;begin perform public.club_bt(e,'edit_round',1,jsonb_build_object('round',1,'players',array_fill(roster[1],array[8])));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL duplicates';end if;
+ s:=public.club_bt(e,'edit_round',1,jsonb_build_object('round',1,'players',roster[2:9]));
+ if s->'matches'->0->'teamA'->>0<>roster[2] or s->'matches'->1->'bench'->>0<>roster[1] then raise exception 'FAIL edit and bench';end if;
+ blocked:=false;begin perform public.club_bt(e,'deactivate_all',2);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL pending deactivate guard';end if;
+ target:=s->'matches'->0->>'id';
+ s:=public.club_bt(e,'score',2,jsonb_build_object('id',target,'a',12,'b',10));
+ blocked:=false;begin perform public.club_bt(e,'edit_round',3,jsonb_build_object('round',1,'players',roster[1:8]));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL completed edit guard';end if;
+ s:=public.club_bt(e,'clear_score',3,jsonb_build_object('id',target));
+ if s->'matches'->0->>'status'<>'pending' or s->'matches'->0->>'scoreA' is not null then raise exception 'FAIL clear score';end if;
+ s:=public.club_bt(e,'delete_match',4,jsonb_build_object('id',target));
+ if jsonb_array_length(s->'matches')<>1 or jsonb_array_length(s->'matches'->0->'bench')<>5 or s->'matches'->0->>'matchIndex'<>'2' then raise exception 'FAIL delete and bench';end if;
+ s:=public.club_bt(e,'edit_round',5,jsonb_build_object('round',1,'players',roster[1:4]));
+ if jsonb_array_length(s->'matches'->0->'teamA')<>2 then raise exception 'FAIL edit second court only';end if;
+ s:=public.club_bt(e,'reset_matches',6);
+ if jsonb_array_length(s->'matches')<>0 then raise exception 'FAIL reset matches';end if;
+ if (select count(*) from public.registrations where event_id=e and present)<>9 then raise exception 'FAIL reset changed presence';end if;
+ s:=public.club_bt(e,'deactivate_all',7);
+ if exists(select 1 from public.registrations where event_id=e and (present or activity<>'welcome')) then raise exception 'FAIL deactivate';end if;
+ if (select count(*) from public.registrations where event_id=e)<>9 then raise exception 'FAIL lost registrations';end if;
+ blocked:=false;begin perform public.club_bt('20261024-0000-4000-8000-000000000001','reset_matches',0);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL isolation';end if;
+end $$;
+rollback;
+select 'PASS: manual teams, bench, duplicate guard, completed guard, clear score, delete match, single court, separate resets, event isolation; fixtures rolled back' as result;
