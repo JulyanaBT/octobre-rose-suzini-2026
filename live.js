@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261023-statspeople';
+import {mountRaquettes,watchPublicBeach} from './raquettes.js?v=20261023-peoplelive';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
@@ -21,14 +21,21 @@ export function renderLive(page, main) {
   if (['accueil','programme'].includes(page)) return false;
   if (setupError) { main.innerHTML = title('Les inscriptions se préparent.') + message(setupError); return true; }
   if(page==='participants'){
-    let rows=[],filter='all',loading=true,failed=false;
+    let rows=[],filter='all',loading=true,failed=false,snapshot='';
     const draw=()=>{
       if(current!==generation)return;
+      const scroll=main.querySelector('.participant-list')?.scrollTop||0;
+      const focus=main.querySelector('[data-participant-filter]:focus')?.dataset.participantFilter;
       const filtered=rows.filter(p=>filter==='all'||(filter==='bt'?p.wants_bt:p.wants_tennis)).sort((a,b)=>Number(b.active)-Number(a.active)||a.nickname.localeCompare(b.nickname,'fr',{sensitivity:'base',numeric:true}));
-      main.innerHTML=`<section class="public-participants"><nav class="participant-filters" aria-label="Filtrer les participants">${[['all','Tous'],['bt','Beach tennis'],['tennis','Tennis']].map(([value,label])=>`<button type="button" data-participant-filter="${value}" aria-pressed="${filter===value}">${label}</button>`).join('')}</nav><p class="participant-count" role="status">${loading?'Chargement des participants…':failed?'La liste est momentanément indisponible. Rechargez la page pour réessayer.':`${filtered.length} participant${filtered.length===1?'':'s'}${filter==='all'?'':` · ${rows.length} inscrits au total`}`}</p><div class="participant-list">${loading||failed?'':filtered.map(p=>`<article class="participant-row"><strong>${esc(p.nickname)}</strong><span class="participant-badges"><span class="participant-dot" data-active="${!!p.active}" role="img" aria-label="${p.active?'Actif':'Non actif'}" title="${p.active?'Actif':'Non actif'}"></span><span class="participant-sport tennis" data-selected="${!!p.wants_tennis}">${p.wants_tennis?'Tennis':'<span class="sr-only">Non inscrit au tennis</span>—'}</span><span class="participant-sport beach" data-selected="${!!p.wants_bt}">${p.wants_bt?'BT':'<span class="sr-only">Non inscrit au beach tennis</span>—'}</span></span></article>`).join('')||'<p class="info-card">Aucun participant dans cette catégorie pour le moment.</p>'}</div></section>`;
-      main.querySelectorAll('[data-participant-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.participantFilter;draw();}));
+      main.innerHTML=`<section class="public-participants"><nav class="participant-filters" aria-label="Filtrer les participants">${[['all','Tous'],['bt','Beach tennis'],['tennis','Tennis']].map(([value,label])=>`<button type="button" data-participant-filter="${value}" aria-pressed="${filter===value}">${label}</button>`).join('')}</nav><div class="participant-recap"><span>${rows.length} inscrits${filter==='all'?'':` · ${filtered.length} affichés`}</span><div class="participant-totals"><span title="Joueurs actifs">${filtered.filter(p=>p.active).length}<small>Actifs</small></span><span>${filtered.filter(p=>p.wants_tennis).length}<small>Tennis</small></span><span>${filtered.filter(p=>p.wants_bt).length}<small>BT</small></span></div></div><p class="participant-count" role="status">${loading?'Chargement…':failed?'Actualisation indisponible. Nouvelle tentative automatique…':''}</p><div class="participant-list">${loading?'':filtered.map(p=>`<article class="participant-row"><strong>${esc(p.nickname)}</strong><span class="participant-badges"><span class="participant-dot" data-active="${!!p.active}" role="img" aria-label="${p.active?'Actif':'Non actif'}" title="${p.active?'Actif':'Non actif'}"></span><span class="participant-sport tennis" data-selected="${!!p.wants_tennis}">${p.wants_tennis?'Tennis':'<span class="sr-only">Non inscrit au tennis</span>—'}</span><span class="participant-sport beach" data-selected="${!!p.wants_bt}">${p.wants_bt?'BT':'<span class="sr-only">Non inscrit au beach tennis</span>—'}</span></span></article>`).join('')||'<p class="info-card">Aucun participant dans cette catégorie pour le moment.</p>'}</div></section>`;
+      main.querySelectorAll('[data-participant-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.participantFilter;draw();main.querySelector('.participant-list').scrollTop=0;}));
+      main.querySelector('.participant-list').scrollTop=scroll;
+      if(focus)main.querySelector(`[data-participant-filter="${focus}"]`)?.focus({preventScroll:true});
     };
-    draw();backend.publicParticipants('20261024-0000-4000-8000-000000000001').then(data=>{rows=data;rows.sort((a,b)=>a.nickname.localeCompare(b.nickname,'fr',{sensitivity:'base',numeric:true}));}).catch(()=>{failed=true;}).finally(()=>{loading=false;draw();});
+    const load=()=>backend.publicParticipants('20261024-0000-4000-8000-000000000001');
+    const apply=data=>{const next=JSON.stringify(data);if(next===snapshot&&!failed&&!loading)return;rows=data;snapshot=next;loading=false;failed=false;draw();};
+    const onError=()=>{loading=false;failed=true;draw();};
+    draw();load().then(data=>{if(current===generation)apply(data);}).catch(()=>{if(current===generation)onError();}).finally(()=>{if(current===generation)watchPublicBeach({load,apply,onError,isCurrent:()=>current===generation});});
     return true;
   }
   if(page.startsWith('activation')){activationPage(backend,main,page,()=>current===generation);return true;}
