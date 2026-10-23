@@ -1,8 +1,28 @@
+// Each round grants a share of its available places only to that round’s active roster.
+export function rotationStats(matches){
+ const stats=new Map(),rounds=new Map();
+ for(const m of matches){if(!rounds.has(m.roundNumber))rounds.set(m.roundNumber,[]);rounds.get(m.roundNumber).push(m);}
+ for(const [,games] of [...rounds].sort((a,b)=>Number(a[0])-Number(b[0]))){
+  const playing=new Set(games.flatMap(m=>[...m.teamA,...m.teamB]));
+  const active=new Set([...playing,...games.flatMap(m=>m.bench||[])]);
+  if(!active.size)continue;
+  for(const [id,s] of stats)if(!active.has(id))s.benchStreak=0;
+  for(const id of active){if(!stats.has(id))stats.set(id,{turns:0,played:0,expected:0,benchStreak:0});const s=stats.get(id);s.turns++;s.expected+=playing.size/active.size;s.played+=Number(playing.has(id));s.benchStreak=playing.has(id)?0:s.benchStreak+1;}
+ }
+ return stats;
+}
+export function chooseRotation(activeList,matches,random=Math.random){
+ const count=Math.min(8,Math.floor(activeList.length/4)*4);
+ if(count<4)throw new Error('Il faut au moins 4 joueurs actifs.');
+ const stats=rotationStats(matches);
+ const ranked=activeList.map(player=>{const s=stats.get(player.id)||{expected:0,played:0,benchStreak:0};return {player,debt:s.expected-s.played+count/activeList.length,wait:s.benchStreak,tie:random()};}).sort((a,b)=>Math.abs(b.debt-a.debt)>1e-9?b.debt-a.debt:b.wait-a.wait||a.tie-b.tie);
+ return {selected:ranked.slice(0,count).map(r=>r.player),bench:ranked.slice(count).map(r=>r.player.id)};
+}
 // Rotation engine adapted from JulyanaBT/portesouvertes2026.
 // Preserves partner/opponent weights and 1500 candidate attempts.
 export function generateRound(participants, matches, roundNumber) {
  const players = participants;
- const COURTS = ['Terrain BT 1', 'Terrain BT 2'];
+ const COURTS = ['🐝 Manon Queen Bee', '🌶️ Lisa de los pimentos'];
  const MAX_PLAYERS_ON_COURT = 8;
  const activePlayers = () => players.filter(p => p.activity === 'bt' && p.present);
  const shuffle = a => { const r=[...a]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; };
@@ -207,84 +227,7 @@ function addOpponent(
 /* ========================================
    SELECTION DES JOUEURS
 ======================================== */
-function choosePlayers(
-  activeList,
-  sourceMatches
-) {
-  const stats =
-    createStats(
-      sourceMatches
-    );
-  const ranked =
-    [...activeList]
-      .sort(
-        (a, b) => {
-          const statsA =
-            stats.get(a.id) || {};
-          const statsB =
-            stats.get(b.id) || {};
-          /*
-           * Priorité :
-           *
-           * 1. moins de matchs joués
-           * 2. plus de passages au banc
-           * 3. hasard
-           */
-          if (
-            (statsA.played || 0) !==
-            (statsB.played || 0)
-          ) {
-            return (
-              (statsA.played || 0) -
-              (statsB.played || 0)
-            );
-          }
-          if (
-            (statsA.bench || 0) !==
-            (statsB.bench || 0)
-          ) {
-            return (
-              (statsB.bench || 0) -
-              (statsA.bench || 0)
-            );
-          }
-          return (
-            Math.random() -
-            .5
-          );
-        }
-      );
-  const playingCount =
-    Math.min(
-      MAX_PLAYERS_ON_COURT,
-      Math.floor(
-        ranked.length / 4
-      ) * 4
-    );
-  if (
-    playingCount < 4
-  ) {
-    throw new Error(
-      "Il faut au moins 4 joueurs actifs."
-    );
-  }
-  return {
-    selected:
-      ranked.slice(
-        0,
-        playingCount
-      ),
-    bench:
-      ranked
-        .slice(
-          playingCount
-        )
-        .map(
-          player =>
-            player.id
-        )
-  };
-}
+function choosePlayers(activeList,sourceMatches){return chooseRotation(activeList,sourceMatches);}
 /* ========================================
    QUALITE D'UNE COMPOSITION
 ======================================== */
