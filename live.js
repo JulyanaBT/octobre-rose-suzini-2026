@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261023-rotation';
+import {mountRaquettes} from './raquettes.js?v=20261023-compactmatches';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
