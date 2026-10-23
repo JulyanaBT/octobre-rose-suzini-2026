@@ -1,5 +1,5 @@
-import {publicHeader,publicPage} from './public.js?v=20261019-moncompte';
-import {renderLive,invalidateLive} from './live.js?v=20261019-moncompte';
+import {publicHeader,publicPage} from './public.js?v=20261023-btstatus';
+import {renderLive,invalidateLive} from './live.js?v=20261023-btstatus';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});
