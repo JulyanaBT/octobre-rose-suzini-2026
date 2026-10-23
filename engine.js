@@ -416,4 +416,5 @@ export function ranking(players,matches) {
 export function assignedPending(id,matches) {
  return matches.some(m=>m.status!=='completed'&&[...m.teamA,...m.teamB].includes(id));
 }
-export function canChangeActivity(id,matches){return !assignedPending(id,matches);}
+// Availability is for future draws; saved match lineups remain unchanged.
+export function canChangeActivity(){return true;}
