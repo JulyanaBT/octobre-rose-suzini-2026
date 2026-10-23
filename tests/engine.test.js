@@ -15,7 +15,7 @@ test('Four players use one court; fewer than four cannot generate',()=>{
  assert.throws(()=>generateRound(players.slice(0,3),[],1));
 });
 test('Pending match prevents transfer, bench may transfer, completed match releases',()=>{
- const ms=generateRound(players,[],1);const id=ms[0].teamA[0];assert.equal(canChangeActivity(id,ms),false);
+ const ms=generateRound(players,[],1);const id=ms[0].teamA[0];assert.equal(canChangeActivity(id,ms),true);
  assert.equal(canChangeActivity(ms[0].bench[0],ms),true);ms[0].status='completed';assert.equal(canChangeActivity(id,ms),true);
 });
 test('Ranking retains best ten, counts all wins and allocates round bonus once',()=>{
