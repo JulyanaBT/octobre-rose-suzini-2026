@@ -1,0 +1,35 @@
+begin;
+insert into public.events(id,title) values('00000000-0000-4000-8000-000000000010','TEST BT');
+insert into auth.users(id,email,email_confirmed_at) values('00000000-0000-4000-8000-000000000010','bt-test@example.invalid',now());
+insert into public.event_memberships(user_id,event_id) values('00000000-0000-4000-8000-000000000010','00000000-0000-4000-8000-000000000010');
+insert into public.registrations(id,event_id,first_name,last_name,nickname,present,activity,wants_bt,wants_tennis)
+select ('00000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'00000000-0000-4000-8000-000000000010','Test','BT','TEST-BT-010-'||i,true,'bt',true,false from generate_series(101,109) i;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000010',true);
+do $$ declare s jsonb;r jsonb;roster text[];e uuid:='00000000-0000-4000-8000-000000000010';blocked boolean;first_id text;second_id text;snapshot jsonb;begin
+ select array_agg(id::text order by id) into roster from public.registrations where event_id=e;
+ r:=jsonb_build_array(jsonb_build_object('teamA',roster[1:2],'teamB',roster[3:4],'bench',roster[9:9]),jsonb_build_object('teamA',roster[5:6],'teamB',roster[7:8],'bench',roster[9:9]));
+ s:=public.club_bt(e,'round',0,r);first_id:=s->'matches'->0->>'id';second_id:=s->'matches'->1->>'id';snapshot:=s->'matches';
+ perform public.club_set_participation(e,roster[1]::uuid,0,false,'welcome');
+ s:=public.club_bt(e);
+ if s->'matches' is distinct from snapshot then raise exception 'FAIL availability changed scheduled teams';end if;
+ r:=jsonb_build_array(jsonb_build_object('teamA',roster[2:3],'teamB',roster[4:5],'bench','[]'::jsonb),jsonb_build_object('teamA',roster[6:7],'teamB',roster[8:9],'bench','[]'::jsonb));
+ s:=public.club_bt(e,'round',1,r);
+ if jsonb_array_length(s->'matches')<>4 then raise exception 'FAIL one ahead';end if;
+ blocked:=false;begin perform public.club_bt(e,'round',2,r);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL third pending round';end if;
+ s:=public.club_bt(e,'score',2,jsonb_build_object('id',first_id,'a',12,'b',10));snapshot:=s->'matches'->0;
+ s:=public.club_bt(e,'edit_match',3,jsonb_build_object('id',second_id,'players',array[roster[5],roster[6],roster[7],roster[9]]));
+ if ((s->'matches'->0)-'bench') is distinct from (snapshot-'bench') then raise exception 'FAIL completed match changed';end if;
+ if not(s->'matches'->0->'bench' ? roster[8]) then raise exception 'FAIL new bench';end if;
+ blocked:=false;begin perform public.club_bt(e,'edit_match',4,jsonb_build_object('id',second_id,'players',roster[2:5]));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL same round conflict';end if;
+ blocked:=false;begin perform public.club_bt(e,'edit_match',4,jsonb_build_object('id',first_id,'players',roster[1:4]));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL completed match edit';end if;
+ s:=public.club_bt(e,'score',4,jsonb_build_object('id',second_id,'a',12,'b',7));
+ s:=public.club_bt(e,'round',5,r);
+ if jsonb_array_length(s->'matches')<>6 then raise exception 'FAIL next round after completion';end if;
+ blocked:=false;begin perform public.club_bt(e,'clear_score',6,jsonb_build_object('id',first_id));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL reopening third pending';end if;
+ s:=public.club_bt(e,'clear_score',6,jsonb_build_object('id',s->'matches'->2->>'id'));
+ blocked:=false;begin perform public.club_bt(e,'edit_match',6,jsonb_build_object('id',second_id,'players',roster[5:8]));exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL stale write';end if;
+ blocked:=false;begin perform public.club_bt('20261024-0000-4000-8000-000000000001','round',0,r);exception when raise_exception then blocked:=true;end;if not blocked then raise exception 'FAIL event isolation';end if;
+end $$;
+rollback;
+select 'PASS: one round ahead, inactive during match, saved teams preserved, individual edit beside completed court, bench, third round guard, stale writes, event isolation; fixtures rolled back' as result;
