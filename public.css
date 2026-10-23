@@ -322,3 +322,10 @@ body[data-space="public"] .bt-schedule-head{top:var(--bt-nav-height,78px)}
 body[data-space="public"] .ranking-columns,body[data-space="public"] .stats-columns{position:sticky;top:var(--bt-nav-height,78px);z-index:14;background:#fff5f8}
 body[data-page="participants"] main{overflow:hidden}
 body[data-page="participants"] main>.public-participants{flex:1;min-height:0}
+
+body[data-space="public"] .racket-nav nav.bt-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+.participant-filters{grid-template-columns:repeat(5,minmax(0,1fr))}.participant-filters button{font-size:11px;padding:7px 2px;min-height:36px}
+.participant-status-filters{position:static;display:flex;gap:5px;flex-shrink:0;width:100%;margin:5px 0 0;padding:0;background:none;border:0;box-shadow:none}
+.participant-status-filters button{flex:1;min-height:30px;padding:4px;font-size:11px;background:#fff;color:#883151;border:1px solid #eac6d8}.participant-status-filters button[aria-pressed="true"]{background:#fce0ed;border-color:#d53078}
+.participant-row,.participant-recap{grid-template-columns:minmax(0,1fr) 157px}.participant-row .participant-badges,.participant-totals{grid-template-columns:18px 21px 50px 50px;gap:6px}.participant-row .participant-sport{width:50px}
+.participant-activity{display:block;width:11px;height:11px;margin:auto;border-radius:50%;background:#999}.participant-activity[data-activity="bt"]{background:#f2ce2c}.participant-activity[data-activity="tennis"]{background:#f2912f}.participant-activity[data-activity="prevention"]{background:#ed55a1}.participant-activity[data-activity="inactive"]{visibility:hidden}.participant-totals small{font-size:7px}
