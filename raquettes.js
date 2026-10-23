@@ -38,7 +38,7 @@ export async function mountRaquettes(root,api,eventId,isCurrent,{readOnly=false,
  root.querySelectorAll('details[data-ranking-id]').forEach(el=>el.open=expanded.includes(el.dataset.rankingId));
  root.querySelectorAll('details[data-topic]').forEach(el=>el.open=el.dataset.topic===openTopic);
  root.querySelectorAll('[data-language]').forEach(b=>b.onclick=()=>{rulesLanguage=b.dataset.language;draw();});
- root.querySelectorAll('[data-sport]').forEach(b=>b.onclick=()=>{sport=b.dataset.sport;draw();});root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;draw();});
+ root.querySelectorAll('[data-sport]').forEach(b=>b.onclick=()=>{sport=b.dataset.sport;draw();refreshView();});root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;draw();refreshView();});
  root.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;draw();});
  root.querySelectorAll('[data-bt-toggle]').forEach(b=>b.onclick=()=>changeStatus(b.dataset.btToggle,beachStatus(players.find(p=>p.id===b.dataset.btToggle))==='bt'?'unspecified':'bt'));
  root.querySelectorAll('[data-bt-status]').forEach(b=>b.onclick=()=>{const order=['unspecified','inactive','tennis','prevention'];const status=beachStatus(players.find(p=>p.id===b.dataset.btStatus));changeStatus(b.dataset.btStatus,order[(order.indexOf(status)+1)%order.length]);});
@@ -53,7 +53,9 @@ export async function mountRaquettes(root,api,eventId,isCurrent,{readOnly=false,
  root.querySelector('#bt-save-edit')?.addEventListener('click',()=>mutate(async()=>{const result=await api.beach({p_event:eventId,p_action:'edit_match',p_version:state.version,p_data:{id:editingMatch,players:draft}});editingMatch=null;return result;}));
  const header=document.querySelector('header');if(header)root.style.setProperty('--racket-top',`${header.getBoundingClientRect().height}px`);const nav=root.querySelector('.racket-nav');if(nav)root.style.setProperty('--bt-nav-height',`${nav.getBoundingClientRect().height}px`);
  }
- async function mutate(action){if(readOnly||busy)return;busy=true;error='';draw();try{state=await action();}catch(e){error=e.message;}finally{busy=false;draw();}}
+ let refreshVersion=0;
+ async function refreshView(){const version=++refreshVersion;if(busy||editingMatch)return;try{if(readOnly){const data=await api.publicBeach(eventId);if(isCurrent()&&version===refreshVersion)applyPublic(data);}else{const [rows,data]=await Promise.all([api.registrations(eventId),api.beach({p_event:eventId})]);if(!isCurrent()||version!==refreshVersion||busy||editingMatch)return;players=rows.map(p=>({...p,name:p.nickname}));state=data;error='';draw();}}catch(e){if(isCurrent()&&version===refreshVersion){error=e.message;draw();}}}
+ async function mutate(action){if(readOnly||busy)return;refreshVersion++;busy=true;error='';draw();try{state=await action();}catch(e){error=e.message;}finally{busy=false;draw();}}
  async function changeStatus(id,status){
   if(readOnly||busy)return;const player=players.find(p=>p.id===id);if(!player)return;
   busy=true;error='';draw();
