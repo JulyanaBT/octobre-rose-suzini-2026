@@ -1,5 +1,5 @@
-import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261023-scopedstatus';
-import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
+import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261023-clubflow';
+import {mountRegistrations} from './club-registrations.js?v=20261023-clubflow';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
 import {config} from './config.js';
@@ -130,7 +130,7 @@ export function renderLive(page, main) {
     const inscriptionsPage = ['club','club-participants','club-inscriptions','club-joueurs'].includes(page);
     const playersPage=page==='club-joueurs';
     const convivialityPage=['club-convivialite','club-surprise','club-buffet'].includes(page);
-    const subnav=inscriptionsPage?`<nav class="club-subnav" aria-label="Participants"><a href="#club-inscriptions" ${!playersPage?'class="active" aria-current="page"':''}>Inscriptions</a><a href="#club-joueurs" ${playersPage?'class="active" aria-current="page"':''}>Joueurs</a></nav>`:convivialityPage?`<nav class="club-subnav" aria-label="Convivialité"><a href="#club-surprise" ${page!=='club-buffet'?'class="active" aria-current="page"':''}>Surprises</a><a href="#club-buffet" ${page==='club-buffet'?'class="active" aria-current="page"':''}>Buffet</a></nav>`:'';
+    const subnav=inscriptionsPage?`<nav class="club-subnav" aria-label="Participants"><a href="#club-inscriptions" ${!playersPage?'class="active" aria-current="page"':''}>Inscriptions</a><a href="#club-joueurs" ${playersPage?'class="active" aria-current="page"':''}>Activités</a></nav>`:convivialityPage?`<nav class="club-subnav" aria-label="Convivialité"><a href="#club-surprise" ${page!=='club-buffet'?'class="active" aria-current="page"':''}>Surprises</a><a href="#club-buffet" ${page==='club-buffet'?'class="active" aria-current="page"':''}>Buffet</a></nav>`:'';
     const rows = eventId && inscriptionsPage ? await backend.registrations(eventId) : [];
     const event = events.find(e=>e.id===eventId);
     if (current !== generation || listRequest !== listVersion) return;
