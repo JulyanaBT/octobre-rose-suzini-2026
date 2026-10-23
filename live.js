@@ -1,4 +1,4 @@
-import {mountRaquettes} from './raquettes.js?v=20261023-compactmatches';
+import {mountRaquettes} from './raquettes.js?v=20261023-management';
 import {mountRegistrations} from './club-registrations.js?v=20261019-clubparticipants';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
@@ -10,6 +10,7 @@ if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
 }
 const message = text => `<div class="notice" role="status">${esc(text)}</div>`;
+const settingsNav = reset => `<nav class="club-subnav settings-tabs" aria-label="Paramètres"><a href="#club-compte" ${!reset?'class="active" aria-current="page"':''}>Mon compte</a><a href="#club-reset" ${reset?'class="active" aria-current="page"':''}>Réinitialisation</a></nav>`;
 const title = text => `<div class="page-head"><div class="eyebrow">TC SUZINI · OCTOBRE ROSE</div><h1>${text}</h1></div>`;
 
 export function invalidateLive() { generation++;clearInterval(registrationWatch);registrationWatch=null; }
@@ -90,11 +91,26 @@ export function renderLive(page, main) {
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
     backend.activity().catch(()=>{});
-    if(page==='club-compte'){await accountPage(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
+    if(['club-compte','club-parametres'].includes(page)){await accountPage(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});if(current===generation)main.insertAdjacentHTML('afterbegin',settingsNav(false));return;}
     const events = await backend.events();
     const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
     const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
     selectedClubEvent = eventId;
+    if(page==='club-reset'){
+      if(!eventId){main.innerHTML=settingsNav(true)+message('Aucun événement attribué.');return;}
+      main.innerHTML=settingsNav(true)+`<section class="card"><h2>Réinitialisation</h2><p>Les inscriptions et les comptes sont conservés.</p><h3>Matchs et scores BT</h3><p>Efface tous les tours, matchs, scores, classements et statistiques BT. Les statuts des participants restent inchangés.</p><button data-reset="reset_matches">Effacer les matchs et scores BT</button><h3>Statuts des participants</h3><p>Passe tout le monde en inactif, toutes activités confondues. Les matchs et scores sont conservés. Les matchs en cours doivent d’abord être terminés ou supprimés.</p><button data-reset="deactivate_all">Passer tout le monde en inactif</button><p role="status" id="reset-status"></p></section><div class="organizer-logout"><button id="logout" class="secondary">Se déconnecter</button></div>`;
+      main.querySelector('#logout').onclick=async()=>{signedIn=false;await backend.signOut();if(current===generation)renderLive(page,main);};
+      let resetBusy=false;
+      main.querySelectorAll('[data-reset]').forEach(button=>button.onclick=async()=>{
+        if(resetBusy)return;const action=button.dataset.reset;
+        if(!confirm(action==='reset_matches'?'Effacer définitivement tous les matchs et scores BT ? Les inscriptions et statuts seront conservés.':'Passer tous les participants en inactifs ? Leurs inscriptions et résultats seront conservés.'))return;
+        resetBusy=true;main.querySelectorAll('[data-reset]').forEach(b=>b.disabled=true);
+        try{const state=await backend.beach({p_event:eventId});await backend.beach({p_event:eventId,p_action:action,p_version:state.version});if(current===generation)main.querySelector('#reset-status').textContent=action==='reset_matches'?'Tous les matchs et scores BT ont été effacés.':'Tous les participants sont maintenant inactifs.';}
+        catch(e){if(current===generation)main.querySelector('#reset-status').textContent=e.message;}
+        finally{resetBusy=false;if(current===generation)main.querySelectorAll('[data-reset]').forEach(b=>b.disabled=false);}
+      });return;
+    }
+
     const inscriptionsPage = ['club','club-participants','club-inscriptions','club-joueurs'].includes(page);
     const playersPage=page==='club-joueurs';
     const convivialityPage=['club-convivialite','club-surprise','club-buffet'].includes(page);
