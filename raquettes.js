@@ -95,3 +95,6 @@ export async function mountRaquettes(root,api,eventId,isCurrent,{readOnly=false,
  draw();try{if(readOnly){const data=await api.publicBeach(eventId);if(!isCurrent())return;applyPublic(data);}else{const [rows,data]=await Promise.all([api.registrations(eventId),api.beach({p_event:eventId})]);players=rows.map(p=>({...p,name:p.nickname}));state=data;}}catch(e){error=e.message;}draw();
  if(readOnly&&isCurrent())watchPublicBeach({load:()=>api.publicBeach(eventId),apply:applyPublic,isCurrent:()=>isCurrent()&&root.isConnected,onError:()=>{error='Actualisation momentanément indisponible. Nouvelle tentative automatique…';const status=root.querySelector('.racket-status');if(status)status.textContent=error;}});
 }
+
+export function participantActiveIn(p,activity='all'){return !!p.active&&(activity==='all'||p.activity===activity);}
+export function participantBelongsTo(p,activity='all'){return activity==='all'||(activity==='bt'?!!p.wants_bt||participantActiveIn(p,'bt'):activity==='tennis'?!!p.wants_tennis||participantActiveIn(p,'tennis'):participantActiveIn(p,activity));}
