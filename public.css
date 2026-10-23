@@ -349,3 +349,27 @@ body:is([data-page="club"],[data-page="club-participants"],[data-page="club-insc
 body:is([data-page="club"],[data-page="club-participants"],[data-page="club-inscriptions"],[data-page="club-joueurs"]) .organizer-logout{flex-shrink:0;margin:0;padding:3px 0;gap:8px}body:is([data-page="club"],[data-page="club-participants"],[data-page="club-inscriptions"],[data-page="club-joueurs"]) .organizer-logout button{min-height:30px;padding:4px 7px;font-size:10px}
 .club-registration-row{padding:6px 9px;border:1px solid #edc5d8;border-radius:10px;background:#fff;margin-bottom:5px}.registration-line{display:grid;grid-template-columns:minmax(0,1fr) 74px 46px 46px;gap:5px;align-items:center;font-size:12px}.registration-line>strong{overflow-wrap:anywhere}.registration-current{font-size:10px;border-radius:5px;padding:4px;text-align:center;background:#eee}.registration-sport{font-size:10px;text-align:center;padding:4px 0;border-radius:5px;font-weight:750}.registration-sport.tennis{background:#ffb95f}.registration-sport.beach{background:#ffe16b}.registration-sport.not-selected{background:none;color:#aaa}.registration-identity{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px;font-size:11px;color:#735767}.registration-identity span{overflow-wrap:anywhere}.registration-identity button{min-height:32px;padding:4px 10px;font-size:11px}
 #club-registration-manager .club-register-tools{flex-direction:row}#club-registration-manager .club-search{min-width:0}#club-registration-manager .club-search input{width:100%;font-size:12px}#club-registration-manager #club-add{flex-shrink:0}
+/* Club raquettes: fixed navigation, independent central scrolling. */
+body[data-page="club-raquettes"]{height:100dvh;min-height:0;overflow:hidden}
+body[data-page="club-raquettes"] main{flex:1;min-height:0;overflow:hidden;width:100%;padding:6px 14px;gap:4px}
+#club-raquettes-manager{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+#club-raquettes-manager .racket-nav{position:static;flex-shrink:0}
+#club-raquettes-manager .racket-status{flex-shrink:0;font-size:11px;margin:3px 0}
+#club-raquettes-manager .racket-content{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding-top:6px;scrollbar-width:thin}
+body[data-page="club-raquettes"] .organizer-logout{flex-shrink:0;margin:0;padding:3px 0;gap:8px}
+body[data-page="club-raquettes"] .organizer-logout button{min-height:30px;padding:4px 7px;font-size:10px}
+@media(max-width:600px){
+#club-raquettes-manager .bt-matches{grid-template-columns:1fr;gap:6px}
+#club-raquettes-manager .card.bt-match{padding:7px 9px}
+#club-raquettes-manager .bt-match .bt-summary{margin-bottom:4px}
+#club-raquettes-manager .bt-match .court-name{font-size:12px}
+#club-raquettes-manager .bt-score{gap:4px 6px}
+#club-raquettes-manager .bt-score label{font-size:12px}
+#club-raquettes-manager .bt-score input{height:44px;min-height:44px;font-size:18px}
+#club-raquettes-manager .bt-match-actions{margin-top:4px;gap:5px}
+#club-raquettes-manager .bt-match-actions button{min-height:30px;padding:4px 7px;font-size:10px}
+#club-raquettes-manager .bt-round-heading{margin:5px 0}
+#club-raquettes-manager .bt-bench{padding:5px 8px;margin-top:4px;font-size:11px}
+#club-raquettes-manager .bt-round{margin-bottom:10px}
+#club-raquettes-manager .racket-content>.smalltext{font-size:10px;line-height:1.25;margin:4px 0}
+}
