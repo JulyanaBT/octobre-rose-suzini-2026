@@ -311,3 +311,14 @@ body[data-page="participants"] main{flex:1;min-height:0;overflow:hidden;display:
 .participant-count:empty{display:none}.participant-count{margin:4px 0;font-size:11px}
 .participant-recap{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:8px;align-items:center;padding:8px 10px 6px;font-size:11px;color:#785466}
 .participant-totals{display:grid;grid-template-columns:20px 52px 52px;gap:6px;text-align:center;font-weight:750}.participant-totals small{display:block;font-size:8px;font-weight:500}
+
+/* One public viewport: persistent header/footer, scrollable central content. */
+body[data-space="public"]{height:100dvh;min-height:0;overflow:hidden}
+body[data-space="public"]>header,body[data-space="public"]>footer{flex:0 0 auto}
+body[data-space="public"] main{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;width:100%;scrollbar-width:thin}
+body[data-space="public"] main>*{flex-shrink:0}
+body[data-space="public"] .racket-nav,body[data-space="public"] nav.prevention-tabs{position:sticky;top:0;z-index:15}
+body[data-space="public"] .bt-schedule-head{top:var(--bt-nav-height,78px)}
+body[data-space="public"] .ranking-columns,body[data-space="public"] .stats-columns{position:sticky;top:var(--bt-nav-height,78px);z-index:14;background:#fff5f8}
+body[data-page="participants"] main{overflow:hidden}
+body[data-page="participants"] main>.public-participants{flex:1;min-height:0}
