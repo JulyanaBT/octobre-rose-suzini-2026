@@ -390,6 +390,8 @@ function buildRound(
 return buildRound(roundNumber,matches);
 }
 
+export function resultLimit(turns){return 5+Math.max(0,Math.floor(turns/5)-1);}
+
 export function ranking(players,matches) {
  const rows=new Map(players.map(p=>[p.id,{id:p.id,name:p.name,played:0,wins:0,turns:0,bonus:0,results:[]}]));
  const rounds=new Map();
@@ -397,7 +399,7 @@ export function ranking(players,matches) {
  for(const ms of rounds.values()){
   const active=new Set(ms.flatMap(m=>[...m.teamA,...m.teamB]));
   for(const id of (ms.find(m=>m.bench?.length)?.bench||[])) active.add(id);
-  for(const id of active){const r=rows.get(id);if(r){r.turns++;r.bonus+=2;}}
+  for(const id of active){const r=rows.get(id);if(r){r.turns++;r.bonus+=1;}}
  }
  for(const m of matches){
   if(m.status!=='completed')continue;
@@ -409,9 +411,9 @@ export function ranking(players,matches) {
   }
  }
  return [...rows.values()].map(r=>{
-  const best=r.results.sort((a,b)=>b.points-a.points||b.diff-a.diff||b.scored-a.scored).slice(0,10);
-  return {...r,counted:best.length,points:best.reduce((n,v)=>n+v.points,0),scored:r.bonus+best.reduce((n,v)=>n+v.scored,0),diff:r.bonus+best.reduce((n,v)=>n+v.diff,0)};
- }).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.scored-a.scored||a.name.localeCompare(b.name,'fr',{sensitivity:'base',numeric:true}));
+  const best=r.results.sort((a,b)=>b.points-a.points||b.diff-a.diff||b.scored-a.scored).slice(0,resultLimit(r.turns));
+  return {...r,limit:resultLimit(r.turns),counted:best.length,conceded:best.reduce((n,v)=>n+v.conceded,0),points:best.reduce((n,v)=>n+v.points,0),scored:r.bonus+best.reduce((n,v)=>n+v.scored,0),diff:r.bonus+best.reduce((n,v)=>n+v.diff,0)};
+ }).sort((a,b)=>b.points-a.points||b.diff-a.diff||a.name.localeCompare(b.name,'fr',{sensitivity:'base',numeric:true}));
 }
 export function assignedPending(id,matches) {
  return matches.some(m=>m.status!=='completed'&&[...m.teamA,...m.teamB].includes(id));
