@@ -5,8 +5,8 @@ set local role anon;
 do $$ declare data jsonb;denied boolean:=false;begin
  data:=public.public_bt('00000000-0000-4000-8000-000000000011');
  if jsonb_array_length(data->'players')<>1 or data->'players'->0->>'nickname'<>'PUBLIC-011-BT' then raise exception 'FAIL player projection';end if;
- if data::text like '%Private%' or data::text like '%@%' or data::text like '%prevention%' or data::text like '%email%' or data::text like '%first_name%' then raise exception 'FAIL privacy';end if;
- if data->'players'->0->>'present'<>'false' then raise exception 'FAIL sports-only availability';end if;
+ if data::text like '%Private%' or data::text like '%@%' or data::text like '%email%' or data::text like '%first_name%' then raise exception 'FAIL privacy';end if;
+ if data->'players'->0->>'present'<>'true' or data->'players'->0->>'activity'<>'prevention' then raise exception 'FAIL public activity status';end if;
  if data->'matches'<>'[]'::jsonb then raise exception 'FAIL empty matches';end if;
  begin perform public.public_bt('00000000-0000-4000-8000-000000000012');exception when raise_exception then denied:=true;end;
  if not denied then raise exception 'FAIL unpublished event';end if;
@@ -14,4 +14,4 @@ do $$ declare data jsonb;denied boolean:=false;begin
  begin perform public.club_bt('00000000-0000-4000-8000-000000000011','score',0,'{}');raise exception 'FAIL anon mutation';exception when insufficient_privilege then null;end;
 end $$;
 rollback;
-select 'PASS: public sports only, no contacts or prevention details, unpublished events denied, writes denied; fixtures rolled back' as result;
+select 'PASS: public sports only, activity badges without contact details, unpublished events denied, writes denied; fixtures rolled back' as result;
