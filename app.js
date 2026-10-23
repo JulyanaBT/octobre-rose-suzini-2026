@@ -1,6 +1,6 @@
-import {publicHeader,publicPage} from './public.js?v=20261023-ahead';
-import {renderLive,invalidateLive} from './live.js?v=20261023-ahead';
-import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261023-ahead';
+import {publicHeader,publicPage} from './public.js?v=20261023-ranking';
+import {renderLive,invalidateLive} from './live.js?v=20261023-ranking';
+import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261023-ranking';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});
 let state=empty();
