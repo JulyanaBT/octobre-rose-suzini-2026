@@ -1,6 +1,6 @@
-import {publicHeader,publicPage} from './public.js?v=20261023-clubflow';
-import {renderLive,invalidateLive} from './live.js?v=20261023-clubflow';
-import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261023-clubflow';
+import {publicHeader,publicPage} from './public.js?v=20261023-clubcompact';
+import {renderLive,invalidateLive} from './live.js?v=20261023-clubcompact';
+import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261023-clubcompact';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});
 let state=empty();
@@ -46,3 +46,5 @@ function bind(){
 addEventListener('hashchange',()=>{render();window.scrollTo(0,0);});
 addEventListener('storage',e=>{if(e.key===KEY){try{const s=JSON.parse(e.newValue);if(s&&Array.isArray(s.players)&&Array.isArray(s.matches)){state=s;render();}}catch{}}});
 render();
+
+document.addEventListener('click',e=>{const a=e.target.closest('header a[href^="#"],.club-subnav a[href^="#"],.prevention-tabs a[href^="#"]');if(a&&a.hash===location.hash&&!document.querySelector('dialog[open]')){e.preventDefault();render();}});
