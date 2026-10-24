@@ -1,5 +1,5 @@
-import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261023-clubcourts';
-import {mountRegistrations} from './club-registrations.js?v=20261023-clubcourts';
+import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-clubstats';
+import {mountRegistrations} from './club-registrations.js?v=20261024-clubstats';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261019-moncompte';
 import {config} from './config.js';
