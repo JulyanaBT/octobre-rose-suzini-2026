@@ -100,6 +100,11 @@ Deno.serve(async req => {
    const {data}=await service.from('club_accounts').select('*').eq('id',body.user_id).maybeSingle();account=data;
   }
   if(!account||!account.enabled||account.event_ids.length!==1||account.event_ids[0]!==eventId)return reply({error:'Compte indisponible ou suspendu.'},400);
+  if(!account.user_id){
+   const {data:recovered,error:recoveryError}=await service.rpc('finalize_password_club_account',{p_account:account.id});
+   if(recoveryError)return reply({error:'La liaison du compte ne peut pas être vérifiée. Contactez l’administrateur.'},400);
+   if(recovered){account.user_id=recovered;account.activated_at=new Date().toISOString();}
+  }
   if(account.user_id){
    const {data:protectedUser}=await service.from('organizers').select('user_id').eq('user_id',account.user_id).maybeSingle();
    if(protectedUser||account.user_id===userData.user.id)return reply({error:'Compte administrateur protégé.'},403);
@@ -113,10 +118,10 @@ Deno.serve(async req => {
    const {error}=await service.auth.admin.createUser({email:`${account.id}@accounts.invalid`,password,email_confirm:true,app_metadata:{club_invitation_id:account.id,club_invitation_hash:hash}});
    if(error)return reply({error:'Création impossible. Vérifiez le mot de passe puis réessayez depuis la liste des gestionnaires.'},400);
   }
+  const {error:finalizeError}=await service.rpc('finalize_password_club_account',{p_account:account.id});
+  if(finalizeError)return reply({error:'Compte créé, mais finalisation impossible. Réessayez depuis les gestionnaires.'},400);
   const {data:ready}=await service.from('club_accounts').select('user_id,activated_at,enabled,invite_tracking_token').eq('id',account.id).single();
   if(!ready?.user_id||!ready.activated_at||!ready.enabled)return reply({error:'Le compte doit encore être finalisé. Réessayez depuis la liste des gestionnaires.'},400);
-  const {data:membership}=await service.from('event_memberships').select('event_id').eq('user_id',ready.user_id).eq('event_id',eventId).maybeSingle();
-  if(!membership)return reply({error:'Le compte existe, mais son accès Club manque. Contactez l’administrateur.'},400);
   return reply({user_id:account.id,username:account.username,link:site+'#club-compte?invitation='+ready.invite_tracking_token});
  }
  if(body.action==='list'){
