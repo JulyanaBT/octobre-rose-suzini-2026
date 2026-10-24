@@ -1,7 +1,7 @@
-import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-invites';
-import {mountRegistrations} from './club-registrations.js?v=20261024-invites';
-import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-invites';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-invites';
+import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-managerflow';
+import {mountRegistrations} from './club-registrations.js?v=20261024-managerflow';
+import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-managerflow';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-managerflow';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -9,6 +9,12 @@ let restored = false, selectedClubEvent = null, registrationWatch=null;
 if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
 }
+// A tracking token identifies an invitation, never grants access.
+export function consumeInvitation(){const invitationMatch=location.hash.match(/^#club-compte\?invitation=([0-9a-f-]{36})$/i);
+if(invitationMatch){backend?.trackInvitation(invitationMatch[1]).catch(()=>{});history.replaceState(null,'',location.pathname+location.search+'#club-compte');}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.body.dataset.space==='club')backend?.activity(true).catch(()=>{});});
+window.addEventListener('focus',()=>{if(document.body.dataset.space==='club')backend?.activity(true).catch(()=>{});});
+window.addEventListener('pageshow',()=>{if(document.body.dataset.space==='club')backend?.activity(true).catch(()=>{});});
 const message = text => `<div class="notice" role="status">${esc(text)}</div>`;
 const settingsNav = reset => `<nav class="club-subnav settings-tabs" aria-label="Paramètres"><a href="#club-compte" ${!reset?'class="active" aria-current="page"':''}>Mon compte</a><a href="#club-reset" ${reset?'class="active" aria-current="page"':''}>Réinitialisation</a></nav>`;
 const title = text => `<div class="page-head"><div class="eyebrow">TC SUZINI · OCTOBRE ROSE</div><h1>${text}</h1></div>`;
@@ -99,7 +105,7 @@ export function renderLive(page, main) {
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
-    backend.activity().catch(()=>{});
+    backend.activity(true).catch(()=>{});
     main.style.setProperty('--club-header-height',`${document.querySelector('header')?.getBoundingClientRect().height||120}px`);
     if(['club-compte','club-parametres'].includes(page)){
       main.innerHTML=settingsNav(false)+'<section id="club-account-content"><p>Chargement du compte…</p></section>';
