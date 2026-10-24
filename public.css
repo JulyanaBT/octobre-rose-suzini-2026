@@ -373,3 +373,6 @@ body[data-page="club-raquettes"] .organizer-logout button{min-height:30px;paddin
 #club-raquettes-manager .bt-round{margin-bottom:10px}
 #club-raquettes-manager .racket-content>.smalltext{font-size:10px;line-height:1.25;margin:4px 0}
 }
+
+/* Club : colonnes lisibles pendant le défilement des classements. */
+#club-raquettes-manager .ranking-columns,#club-raquettes-manager .stats-columns{position:sticky;top:0;z-index:2;background:#fff5fa}
