@@ -113,11 +113,11 @@ Deno.serve(async req => {
    const {error}=await service.auth.admin.createUser({email:`${account.id}@accounts.invalid`,password,email_confirm:true,app_metadata:{club_invitation_id:account.id,club_invitation_hash:hash}});
    if(error)return reply({error:'Création impossible. Vérifiez le mot de passe puis réessayez depuis la liste des gestionnaires.'},400);
   }
-  const {data:ready}=await service.from('club_accounts').select('user_id,activated_at,enabled').eq('id',account.id).single();
+  const {data:ready}=await service.from('club_accounts').select('user_id,activated_at,enabled,invite_tracking_token').eq('id',account.id).single();
   if(!ready?.user_id||!ready.activated_at||!ready.enabled)return reply({error:'Le compte doit encore être finalisé. Réessayez depuis la liste des gestionnaires.'},400);
   const {data:membership}=await service.from('event_memberships').select('event_id').eq('user_id',ready.user_id).eq('event_id',eventId).maybeSingle();
   if(!membership)return reply({error:'Le compte existe, mais son accès Club manque. Contactez l’administrateur.'},400);
-  return reply({user_id:account.id,username:account.username,link:site+'#club'});
+  return reply({user_id:account.id,username:account.username,link:site+'#club-compte?invitation='+ready.invite_tracking_token});
  }
  if(body.action==='list'){
   const {data,error}=await service.from('club_accounts').select('id,user_id,username,display_name,email,enabled,event_ids,activated_at,invite_expires_at,invitation_sent_at').order('created_at');
