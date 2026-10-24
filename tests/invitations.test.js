@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 const source=stripTypeScriptTypes((await readFile(new URL('../supabase/functions/club-access/index.ts',import.meta.url),'utf8')).replace(/^import .*\n/,''));
 function harness(results){
  const calls=[];let handler;
- const service={from(table){const steps=[];const q={then(resolve,reject){calls.push({table,steps});return Promise.resolve(results.shift()).then(resolve,reject);}};for(const op of ['select','eq','is','order','in','insert','update','single','maybeSingle','not'])q[op]=(...args)=>{steps.push([op,...args]);return q;};return q;},auth:{getUser:async()=>({data:{user:{id:'owner'}}}),admin:{createUser:async data=>{calls.push({createUser:data});return results.shift();}}}};
+ const service={rpc:async(name,args)=>{calls.push({rpc:name,args});return results.shift();},from(table){const steps=[];const q={then(resolve,reject){calls.push({table,steps});return Promise.resolve(results.shift()).then(resolve,reject);}};for(const op of ['select','eq','is','order','in','insert','update','single','maybeSingle','not'])q[op]=(...args)=>{steps.push([op,...args]);return q;};return q;},auth:{signInWithPassword:async data=>{calls.push({login:data});return results.shift();},getUser:async()=>({data:{user:{id:'owner'}}}),admin:{getUserById:async()=>results.shift(),createUser:async data=>{calls.push({createUser:data});return results.shift();}}}};
  vm.runInNewContext(source,{createClient:()=>service,Deno:{env:{get:()=>''},serve:h=>handler=h},crypto,TextEncoder,Response,Date,Set,Uint8Array,JSON,encodeURIComponent});
  return {calls,run:body=>handler(new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer test','Content-Type':'application/json'},body:JSON.stringify(body)}))};
 }
@@ -28,10 +28,10 @@ test('failed auth creation does not modify an existing user',async()=>{
 const october='20261024-0000-4000-8000-000000000001';
 test('direct creation requires administrator and never accepts caller event scope',async()=>{
  const denied=harness([{data:null}]);assert.equal((await denied.run({action:'create_password',username:'Maite',password:'test-only-password'})).status,403);
- const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{error:null},{error:null}]);
+ const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{data:null},{error:null},{error:null},{error:null},{data:{user_id:'manager',enabled:true,activated_at:'2026-10-24',invite_tracking_token:'tracking-token'}},{data:{event_id:october}}]);
  const r=await h.run({action:'create_password',username:'Maite',password:'test-only-password',event_ids:['other']});assert.equal(r.status,200);
  const insert=h.calls.find(c=>c.steps?.some(s=>s[0]==='insert')).steps.find(s=>s[0]==='insert')[1];assert.deepEqual(Array.from(insert.event_ids),[october]);assert.equal(insert.username,'maite');
- const auth=h.calls.at(-1).createUser;assert.equal(auth.app_metadata.club_invitation_id,'account');assert.equal(auth.email,'account@accounts.invalid');assert.equal(auth.password,'test-only-password');assert.equal((await r.json()).link.endsWith('#club'),true);
+ const auth=h.calls.find(c=>c.createUser).createUser;assert.equal(auth.app_metadata.club_invitation_id,'account');assert.equal(auth.email,'account@accounts.invalid');assert.equal(auth.password,'test-only-password');assert.equal((await r.json()).link.endsWith('#club-compte?invitation=tracking-token'),true);
 });
 test('password reset rejects suspended and protected administrator accounts',async()=>{
  const suspended=harness([{data:{user_id:'owner'}},{data:{id:'account',enabled:false,event_ids:[october]}}]);assert.equal((await suspended.run({action:'set_password',user_id:'account',password:'test-only-password'})).status,400);
@@ -39,10 +39,23 @@ test('password reset rejects suspended and protected administrator accounts',asy
 });
 
 test('six-character initial password is accepted and five is rejected',async()=>{
- const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{error:null},{error:null}]);assert.equal((await h.run({action:'create_password',username:'maite',password:'abc123'})).status,200);
+ const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{data:null},{error:null},{error:null},{error:null},{data:{user_id:'manager',enabled:true,activated_at:'2026-10-24',invite_tracking_token:'tracking-token'}},{data:{event_id:october}}]);assert.equal((await h.run({action:'create_password',username:'maite',password:'abc123'})).status,200);
  const short=harness([{data:{user_id:'owner'}}]);assert.equal((await short.run({action:'create_password',username:'maite',password:'abc12'})).status,400);
 });
 test('own profile reads are bound to the authenticated user',async()=>{
  const h=harness([{data:{id:'own',username:'maite',email:'own@accounts.invalid'}}]);const r=await h.run({action:'profile',user_id:'other'});assert.equal(r.status,200);assert.deepEqual(await r.json(),{username:'maite',email:''});assert.equal(h.calls[0].steps.some(s=>s[0]==='eq'&&s[1]==='user_id'&&s[2]==='owner'),true);
  const denied=harness([{data:null}]);assert.equal((await denied.run({action:'profile'})).status,403);
+});
+
+test('username login returns a session only for an enabled activated manager',async()=>{
+ const h=harness([{data:{user_id:'manager',enabled:true,activated_at:'2026-10-24'}},{data:{user:{email:'internal@accounts.invalid'}}},{data:{session:{access_token:'fake'}}}]);
+ const response=await h.run({action:'login',username:'Maite',password:'fake-password'});
+ assert.equal(response.status,200);assert.equal((await response.json()).session.access_token,'fake');
+ assert.equal(h.calls.find(c=>c.login).login.email,'internal@accounts.invalid');
+ const denied=harness([{data:{user_id:'manager',enabled:false,activated_at:'2026-10-24'}},{data:{user:{email:'internal@accounts.invalid'}}},{data:{session:{access_token:'fake'}}}]);
+ assert.equal((await denied.run({action:'login',username:'maite',password:'fake-password'})).status,401);
+});
+test('account creation reports finalization errors without claiming ready',async()=>{
+ const h=harness([{data:{user_id:'owner'}},{data:{id:'account',username:'maite',enabled:true,event_ids:[october]}},{data:null},{error:null},{error:null},{error:{message:'missing membership'}}]);
+ assert.equal((await h.run({action:'create_password',username:'maite',password:'abc123'})).status,400);
 });
