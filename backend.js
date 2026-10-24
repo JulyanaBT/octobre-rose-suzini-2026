@@ -53,6 +53,9 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
   async function activity(force=false){if(!token||!role||(!force&&Date.now()-lastActivity<60000))return;lastActivity=Date.now();try{await request('/rest/v1/rpc/record_club_activity',{body:{},authorized:true});}catch(error){lastActivity=0;throw error;}}
   return {
     activity,
+    publicMassage:event=>request('/rest/v1/rpc/public_massage',{body:{p_event:event}}),
+    clubMassage:event=>request('/rest/v1/rpc/club_massage',{body:{p_event:event},authorized:true}),
+    assignMassage:data=>request('/rest/v1/rpc/assign_massage',{body:data,authorized:true}),
     maintenance:()=>request('/rest/v1/rpc/get_site_maintenance',{body:{}}),
     saveMaintenance:data=>request('/rest/v1/rpc/set_site_maintenance',{body:data,authorized:true}),
     async settings() {
