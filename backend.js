@@ -53,6 +53,8 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
   async function activity(force=false){if(!token||!role||(!force&&Date.now()-lastActivity<60000))return;lastActivity=Date.now();try{await request('/rest/v1/rpc/record_club_activity',{body:{},authorized:true});}catch(error){lastActivity=0;throw error;}}
   return {
     activity,
+    maintenance:()=>request('/rest/v1/rpc/get_site_maintenance',{body:{}}),
+    saveMaintenance:data=>request('/rest/v1/rpc/set_site_maintenance',{body:data,authorized:true}),
     async settings() {
       const rows = await request('/rest/v1/events?select=registration_open&id=eq.20261024-0000-4000-8000-000000000001');
       return {open: rows?.[0]?.registration_open === true};
