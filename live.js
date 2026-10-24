@@ -1,13 +1,20 @@
+import {maintenanceApplies,maintenanceAdmin} from './maintenance.js?v=20261024-maintenance';
 import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-managerflow';
 import {mountRegistrations} from './club-registrations.js?v=20261024-managerflow';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-requiredemail';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-managerflow';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-maintenance';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
 let restored = false, selectedClubEvent = null, registrationWatch=null;
 if (config.mode === 'live') {
   try { backend = createBackend(config); } catch (error) { setupError = error.message; }
+}
+export async function pageMaintenance(page){
+ if(!backend||page.startsWith('admin')||page==='organisation'||page.startsWith('activation'))return false;
+ if(!restored){signedIn=await backend.restore();restored=true;}
+ const settings=await backend.maintenance();
+ return maintenanceApplies(page,settings,backend.role());
 }
 // A tracking token identifies an invitation, never grants access.
 export function consumeInvitation(){const invitationMatch=location.hash.match(/^#club-compte\?invitation=([0-9a-f-]{36})$/i);
@@ -103,6 +110,7 @@ export function renderLive(page, main) {
   async function list() {
     const listRequest=++listVersion;
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
+    if(page==='admin-maintenance'){await maintenanceAdmin(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
     if(backend.role()==='club'&&!['club-compte','club-parametres'].includes(page)){
