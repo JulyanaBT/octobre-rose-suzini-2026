@@ -1,5 +1,5 @@
 import {publicHeader,publicPage} from './public.js?v=20261024-managerflow';
-import {renderLive,invalidateLive,consumeInvitation} from './live.js?v=20261024-managerflow';
+import {renderLive,invalidateLive,consumeInvitation} from './live.js?v=20261024-requiredemail';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261024-managerflow';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});
