@@ -50,7 +50,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
     return row;
   }
   let lastActivity=0;
-  async function activity(){if(!token||!role||Date.now()-lastActivity<60000)return;lastActivity=Date.now();try{await request('/rest/v1/rpc/record_club_activity',{body:{},authorized:true});}catch(error){lastActivity=0;throw error;}}
+  async function activity(force=false){if(!token||!role||(!force&&Date.now()-lastActivity<60000))return;lastActivity=Date.now();try{await request('/rest/v1/rpc/record_club_activity',{body:{},authorized:true});}catch(error){lastActivity=0;throw error;}}
   return {
     activity,
     async settings() {
@@ -75,6 +75,7 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       const oldToken=token;clear();
       if(oldToken)await fetcher(config.supabaseUrl+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${oldToken}`},signal:AbortSignal.timeout(15000)});
     },
+    trackInvitation: token => request('/rest/v1/rpc/track_club_invitation',{body:{p_token:token}}),
     access: data => data.action==='delete' ? request('/rest/v1/rpc/delete_club_manager',{body:{p_account:data.user_id},authorized:true}) : data.action==='list' ? request('/rest/v1/rpc/admin_club_accounts',{body:{},authorized:true}) : request('/functions/v1/club-access',{body:data,authorized:true}),
     activate: data => request('/functions/v1/club-access',{body:{...data,action:'activate'}}),
     publicParticipants: eventId => request('/rest/v1/rpc/public_participants',{body:{p_event:eventId}}),
