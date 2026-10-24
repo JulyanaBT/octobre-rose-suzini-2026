@@ -1,6 +1,6 @@
-import {maintenanceNotice} from './maintenance.js?v=20261024-ranking24';
-import {publicHeader,publicPage} from './public.js?v=20261024-ranking24';
-import {renderLive,invalidateLive,consumeInvitation,pageMaintenance} from './live.js?v=20261024-ranking24';
+import {maintenanceNotice} from './maintenance.js?v=20261024-massage';
+import {publicHeader,publicPage} from './public.js?v=20261024-massage';
+import {renderLive,invalidateLive,consumeInvitation,pageMaintenance} from './live.js?v=20261024-massage';
 import {generateRound,ranking,canChangeActivity,assignedPending} from './engine.js?v=20261024-managerflow';
 const KEY='suzini-octobre-rose-preview-v1';
 const empty=()=>({players:[],matches:[]});
