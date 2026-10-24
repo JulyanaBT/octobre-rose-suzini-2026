@@ -90,8 +90,12 @@ Deno.serve(async req => {
    const username=String(body.username||'').trim().toLowerCase();
    if(!/^[a-z][a-z0-9_-]{1,29}$/.test(username))return reply({error:'Identifiant invalide.'},400);
    const {data,error}=await service.from('club_accounts').insert({username,display_name:username,event_ids:[eventId]}).select('*').single();
-   if(error)return reply({error:'Identifiant déjà utilisé. Utilisez le bouton Définir le mot de passe sur le compte existant.'},409);
-   account=data;
+   if(error){
+    if(error.code!=='23505')return reply({error:'Impossible de préparer le compte gestionnaire. Réessayez.'},400);
+    const {data:pending}=await service.from('club_accounts').select('*').eq('username',username).is('user_id',null).is('activated_at',null).eq('enabled',true).maybeSingle();
+    if(!pending)return reply({error:'Identifiant déjà utilisé. Utilisez Définir / partager le mot de passe sur ce compte.'},409);
+    account=pending;
+   }else account=data;
   }else{
    const {data}=await service.from('club_accounts').select('*').eq('id',body.user_id).maybeSingle();account=data;
   }
@@ -109,6 +113,10 @@ Deno.serve(async req => {
    const {error}=await service.auth.admin.createUser({email:`${account.id}@accounts.invalid`,password,email_confirm:true,app_metadata:{club_invitation_id:account.id,club_invitation_hash:hash}});
    if(error)return reply({error:'Création impossible. Vérifiez le mot de passe puis réessayez depuis la liste des gestionnaires.'},400);
   }
+  const {data:ready}=await service.from('club_accounts').select('user_id,activated_at,enabled').eq('id',account.id).single();
+  if(!ready?.user_id||!ready.activated_at||!ready.enabled)return reply({error:'Le compte doit encore être finalisé. Réessayez depuis la liste des gestionnaires.'},400);
+  const {data:membership}=await service.from('event_memberships').select('event_id').eq('user_id',ready.user_id).eq('event_id',eventId).maybeSingle();
+  if(!membership)return reply({error:'Le compte existe, mais son accès Club manque. Contactez l’administrateur.'},400);
   return reply({user_id:account.id,username:account.username,link:site+'#club'});
  }
  if(body.action==='list'){
