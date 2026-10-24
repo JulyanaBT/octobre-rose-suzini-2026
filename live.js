@@ -1,6 +1,6 @@
 import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-managerflow';
 import {mountRegistrations} from './club-registrations.js?v=20261024-managerflow';
-import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-managerflow';
+import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-requiredemail';
 import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-managerflow';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -105,6 +105,11 @@ export function renderLive(page, main) {
     if (adminPage && backend.role() !== 'admin') { main.innerHTML=title('Accès réservé à l’administrateur.')+message('Votre compte Club dispose uniquement des événements qui lui sont attribués.')+'<a class="button" href="#club">Rejoindre mon espace Club</a>';return; }
     if(adminPage){await accessManager(backend,main,()=>current===generation,async()=>{signedIn=false;await backend.signOut().catch(()=>{});if(current===generation)renderLive(page,main);});return;}
     if (!['admin','club'].includes(backend.role())) throw new Error('Accès réservé à l’administrateur et aux gestionnaires Club autorisés.');
+    if(backend.role()==='club'&&!['club-compte','club-parametres'].includes(page)){
+      const profile=await backend.access({action:'profile'});
+      if(current!==generation)return;
+      if(!profile.email){location.hash='#club-compte';return;}
+    }
     backend.activity(true).catch(()=>{});
     main.style.setProperty('--club-header-height',`${document.querySelector('header')?.getBoundingClientRect().height||120}px`);
     if(['club-compte','club-parametres'].includes(page)){
