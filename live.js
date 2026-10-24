@@ -1,8 +1,10 @@
+import {mountMassage} from './massage.js?v=20261024-massage';
+import {preventionPage} from './public.js?v=20261024-massage';
 import {maintenanceApplies,maintenanceAdmin} from './maintenance.js?v=20261024-maintenance';
 import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-ranking24';
 import {mountRegistrations} from './club-registrations.js?v=20261024-ranking24';
 import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-requiredemail';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-maintenance';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-massage';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
@@ -33,6 +35,7 @@ export function renderLive(page, main) {
   document.querySelector('.preview').textContent = 'TC SUZINI · OCTOBRE ROSE 2026';
   if (['accueil','programme'].includes(page)) return false;
   if (setupError) { main.innerHTML = title('Les inscriptions se préparent.') + message(setupError); return true; }
+  if(page==='information-stand'){main.innerHTML='<section class="prevention"><nav class="prevention-tabs" aria-label="Prévention"><a href="#information">Informations</a><a href="#information-stand" aria-current="page">Stand</a></nav><div id="massage"></div></section>';mountMassage(main.querySelector('#massage'),backend,'20261024-0000-4000-8000-000000000001',()=>current===generation);return true;}
   if(page==='participants'){
     let rows=[],filter='all',status='all',loading=true,failed=false,snapshot='';
     const draw=()=>{
@@ -131,6 +134,14 @@ export function renderLive(page, main) {
     const requestedEvent = document.querySelector('#event-select')?.value || selectedClubEvent;
     const eventId = events.some(e => e.id === requestedEvent) ? requestedEvent : events[0]?.id;
     selectedClubEvent = eventId;
+    if(['club-information','club-information-stand'].includes(page)){
+      if(!eventId){main.innerHTML=message('Aucun événement attribué.');return;}
+      const stand=page==='club-information-stand';
+      main.innerHTML=stand?'<section class="prevention"><nav class="prevention-tabs"><a href="#club-information">Informations</a><a href="#club-information-stand" aria-current="page">Stand</a></nav><div id="massage"></div></section>':preventionPage('information').replaceAll('#information-stand','#club-information-stand').replaceAll('href="#information"','href="#club-information"');
+      if(stand)mountMassage(main.querySelector('#massage'),backend,eventId,()=>current===generation,{club:true});
+      main.insertAdjacentHTML('beforeend','<div class="organizer-logout"><button id="logout" class="secondary">Se déconnecter</button></div>');
+      main.querySelector('#logout').onclick=async()=>{signedIn=false;await backend.signOut();if(current===generation)renderLive(page,main);};return;
+    }
     if(page==='club-reset'){
       if(!eventId){main.innerHTML=settingsNav(true)+message('Aucun événement attribué.');return;}
       main.innerHTML=settingsNav(true)+`<section class="card"><h2>Réinitialisation</h2><p>Les inscriptions et les comptes sont conservés.</p><h3>Matchs et scores BT</h3><p>Efface tous les tours, matchs, scores, classements et statistiques BT. Les statuts des participants restent inchangés.</p><button data-reset="reset_matches">Effacer les matchs et scores BT</button><h3>Statuts des participants</h3><p>Passe tout le monde en inactif, toutes activités confondues. Les matchs et scores sont conservés. Les matchs en cours doivent d’abord être terminés ou supprimés.</p><button data-reset="deactivate_all">Passer tout le monde en inactif</button><p role="status" id="reset-status"></p></section><div class="organizer-logout"><button id="logout" class="secondary">Se déconnecter</button></div>`;
