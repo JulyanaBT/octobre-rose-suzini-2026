@@ -1,7 +1,7 @@
-import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-tennisrank';
-import {mountRegistrations} from './club-registrations.js?v=20261024-tennisrank';
-import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261019-moncompte';
-import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-tennisrank';
+import {mountRaquettes,watchPublicBeach,participantActiveIn,participantBelongsTo} from './raquettes.js?v=20261024-invites';
+import {mountRegistrations} from './club-registrations.js?v=20261024-invites';
+import {accessManager,activationPage,passwordDialog,accountPage} from './access.js?v=20261024-invites';
+import {createBackend,suggestedNickname,registerWithNickname} from './backend.js?v=20261024-invites';
 import {config} from './config.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let backend, setupError, signedIn = false, generation = 0;
