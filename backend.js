@@ -90,9 +90,9 @@ export function createBackend(config, fetcher = globalThis.fetch, storage = glob
       return {open:rows[0].registration_open===true,version:rows[0].registration_version};
     },
     setRegistrationOpen: data => request('/rest/v1/rpc/set_registration_open',{body:data,authorized:true}),
-    saveRegistration: data => request('/rest/v1/rpc/club_save_sports_registration',{body:data,authorized:true}).then(registrationRow),
+    saveRegistration: data => request('/rest/v1/rpc/club_save_ranked_registration',{body:data,authorized:true}).then(registrationRow),
     setParticipation: data => request('/rest/v1/rpc/club_set_participation',{body:data,authorized:true}).then(registrationRow),
-    registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version,wants_bt,wants_tennis&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
+    registrations: eventId => request('/rest/v1/registrations?select=id,first_name,last_name,nickname,email,created_at,present,activity,version,wants_bt,wants_tennis,tennis_ranking&order=created_at.desc'+(eventId ? '&event_id=eq.'+encodeURIComponent(eventId) : ''), {authorized: true}),
   };
 }
 
